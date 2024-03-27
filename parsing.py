@@ -186,7 +186,7 @@ class AttributeGrammar:
 
 
 # noinspection PyPep8Naming
-def build_slr_parser(G):
+def build_slr_parser(G, *, by=lambda x: x):
     action, goto, _ = G.build_slr_parsing_table()
 
     def parse(buf):
@@ -196,7 +196,7 @@ def build_slr_parser(G):
 
         while True:
             try:
-                k = action[s[-1]][buf[i]]
+                k = action[s[-1]][by(buf[i])]
 
             except KeyError as err:
                 correct = list(action[s[-1]].keys())

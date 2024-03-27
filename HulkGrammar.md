@@ -1,5 +1,5 @@
 <!-- The body of a program in HULK always ends with a single global expression -->
-Program -> Body Exp 
+Program -> Body Exp
 <!-- (and, if necessary, a final semicolon) -->
 Body -> FunctionList Body | ClassList Body | Epsilon
 
@@ -19,21 +19,21 @@ Vector -> [ Explicit ] | [ Expression "||" Iterable ]
 Explicit -> Value | Value , Explicit
 
 ExpressionList -> Expression  | Expression ; ExpressionList
+
 # ArithmeticExpression
-    ArithmeticExpression -> Term | Term + ArithmeticExpression | Term - ArithmeticExpression 
+    ArithmeticExpression -> Term | ArithmeticExpression + Term | ArithmeticExpression - Term
 
-    Term -> Factor | Factor * Term | Factor / Term | Factor % Term
+    Term -> USub | Term * USub | Term / USub | Term % USub
 
-    Factor -> Potency | Potency ^ Factor 
-    
-    Potency -> - Primary | Primary
+    USub -> Factor | - Factor
 
-    Primary -> Numbers | ( ArithmeticExpression ) | Identifier PosibleArguments 
+    Factor -> Base | Base ^ Factor
 
-    PosibleArguments -> ( Arguments ) | . Identifier PosibleArguments | [ ArithmeticExpression ] PossibleArguments | Epsilon
+    Base -> Number | ( ArithmeticExpression ) | Identifier PosibleArguments
 
-    Arguments -> ArithmeticExpression | ArithmeticExpression , Arguments | Epsilon
+    PosibleArguments -> ( ArgumentList ) | . Identifier PosibleArguments | [ ArithmeticExpression ] PossibleArguments | Epsilon
 
+    ArgumentList -> ArithmeticExpression | ArithmeticExpression , ArgumentList | Epsilon
 
 # PrintExpression
     PrintExpression -> print ( CanPrint )
@@ -71,7 +71,7 @@ IfExpression -> if ( ConditionalExpression ) PExp ElseExpression
 
 ElseExpression -> elif ( ConditionalExpression ) PExp ElseExpression | else Expression
 
-ConditionalExpression -> Not | Nor & ConditionalExpresion | Nor "|" ConditionalExpresion 
+ConditionalExpression -> Not | Nor & ConditionalExpresion | Nor "|" ConditionalExpresion
 
 Nor -> Comparable | ! Comparable
 
@@ -119,7 +119,7 @@ Numbers -> [1-9] NextNumbers Decimal
 Decimal -> . [0-9] NextNumbers | Epsilon
 NextNumbers ->  [0-9] NextNumbers | Epsilon
 
-String -> " Char " 
+String -> " Char "
 Char -> \" Char | [ASCII] Char | Epsilon
 
 Identifier -> [_,a-z,A-Z] NextIdentifier

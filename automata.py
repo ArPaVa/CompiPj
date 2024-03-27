@@ -122,11 +122,13 @@ def char(code):
 
 def char_range(nfa_start, nfa_end):
     new = NFA()
+
     start = list(nfa_start.transitions[nfa_start.initial].keys())[0]
     end = list(nfa_end.transitions[nfa_end.initial].keys())[0]
 
     for code in range(ord(start), ord(end) + 1):
         new.transitions.setdefault(new.initial, {})[chr(code)] = [new.final]
+
     return new
 
 
