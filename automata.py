@@ -78,6 +78,7 @@ class NFA:
 
         return frozenset(closure)
 
+    # noinspection SpellCheckingInspection
     def powerset_construction(self):
         states = [self.e_closure(self.initial)]
 
@@ -114,20 +115,19 @@ class NFA:
         return move, finals, states
 
 
-def char(code):
+def char(ch):
     new = NFA()
-    new.transitions.setdefault(new.initial, {})[code] = [new.final]
+    new.transitions.setdefault(new.initial, {})[ch] = [new.final]
     return new
 
 
-def char_range(nfa_start, nfa_end):
+def char_range(char1, char2):
     new = NFA()
+    first = ord(list(char1.transitions[char1.initial].keys())[0])
+    last = ord(list(char2.transitions[char2.initial].keys())[0])
 
-    start = list(nfa_start.transitions[nfa_start.initial].keys())[0]
-    end = list(nfa_end.transitions[nfa_end.initial].keys())[0]
-
-    for code in range(ord(start), ord(end) + 1):
-        new.transitions.setdefault(new.initial, {})[chr(code)] = [new.final]
+    for ch in range(first, last + 1):
+        new.transitions.setdefault(new.initial, {})[chr(ch)] = [new.final]
 
     return new
 
