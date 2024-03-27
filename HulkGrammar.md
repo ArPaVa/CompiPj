@@ -10,7 +10,13 @@ BlockExpression -> { ExpressionList } Pc
 
 Pc  -> ; | Epsilon
 
-Expression -> PrintExpression | ArithmeticExpression | LetExpression | DestructiveExpression | IfExpression
+Expression -> PrintExpression | ArithmeticExpression | LetExpression | DestructiveExpression | IfExpression | WhileExpression
+
+Value -> String | ArithmeticExpression | LetExpression | DestructiveExpression | IfExpression | new Identifier ( Arguments ) | Identifier as Identifier | Vector
+
+Vector -> [ Explicit ] | [ Expression "||" Iterable ]
+
+Explicit -> Value | Value , Explicit
 
 ExpressionList -> Expression  | Expression ; ExpressionList
 # ArithmeticExpression
@@ -24,7 +30,7 @@ ExpressionList -> Expression  | Expression ; ExpressionList
 
     Primary -> Numbers | ( ArithmeticExpression ) | Identifier PosibleArguments 
 
-    PosibleArguments -> ( Arguments ) | Epsilon
+    PosibleArguments -> ( Arguments ) | . Identifier PosibleArguments | [ ArithmeticExpression ] PossibleArguments | Epsilon
 
     Arguments -> ArithmeticExpression | ArithmeticExpression , Arguments | Epsilon
 
@@ -39,14 +45,14 @@ StringExpresion -> String ConcatString
 
 ConcatString -> @ Value ConcatString | Epsilon
 
-Value -> String | ArithmeticExpression | LetExpression | DestructiveExpression | IfExpression
+
 
 # Functions
 Function -> FunctionHeader => Exp | FunctionHeader BlockExpression
 
-FunctionHeader ->  function Identifier ( Params )
+FunctionHeader ->  function Identifier ( Params ) TypeCheck
 
-Params -> Identifier | Identifier , Params | Epsilon
+Params -> Identifier TypeCheck | Identifier TypeCheck , Params | Epsilon
 
 FuctionList -> Function | Fuction FunctionList | Epsilon
 
@@ -55,7 +61,7 @@ LetExpression -> let AssignList in AfterIn
 
 AfterIn -> Exp | LetExpression | ( Expression ) Pc
 
-AssignList -> Identifier = Value | Identifier = Value , AssignList
+AssignList -> Identifier TypeCheck = Value | Identifier TypeCheck = Value , AssignList
 
 DestructiveExpression -> Identifier := Value
 
@@ -69,11 +75,42 @@ ConditionalExpression -> Not | Nor & ConditionalExpresion | Nor "|" ConditionalE
 
 Nor -> Comparable | ! Comparable
 
-Comparable -> true | false | Value < Value | Value <= Value | Value > Value | Value >= Value | Value == Value | Value != Value
+Comparable -> true | false | Value < Value | Value <= Value | Value > Value | Value >= Value | Value == Value | Value != Value | Identifier is Identifier | Expression is Identifier
 
 # Loops
 
+WhileExpression -> while ( ConditionalExpression ) Exp
 
+ForExpression -> for ( Iterable ) Exp
+
+Iterable -> Identifier in Identifier PosibleArguments 
+
+
+# Types
+
+TypeDeclaration -> type Identifier TypeParams Inherit { TypeBody }
+
+Inherit -> inherit Identifier TypeParams | Epsilon
+
+TypeParams -> ( Params ) | Epsilon
+
+TypeBody -> AttributeDef TypeBody | MethodDef TypeBody | Epsilon
+
+AttributeDef -> Identifier TypeCheck = Expression ;
+
+MethodDef -> Identifier ( Params ) => Exp | Identifier ( Params ) BlockExpression
+
+# TypesChecking
+
+TypeCheck -> : Identifier | Epsilon
+
+# Protocols
+
+ProtocolDefinition -> protocol Identifier { MethodDefList }
+
+ProtocolsMethods -> Identifier ( Params ) : Identifier => Exp | Identifier ( Params ) : Identifier BlockExpression
+
+MethodDefList -> ProtocolsMethods MethodDefList | ProtocolsMethods
 
 
 literals -> Numbers | String | boolean
