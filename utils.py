@@ -77,11 +77,7 @@ TokenType = Enum('TokenType', [
     'EOF'
 ])
 
-terminals_tokens = [TokenType.Plus, TokenType.Sub, TokenType.Prod, TokenType.Div, TokenType.Rem, TokenType.Pow, TokenType.ParenL,
-     TokenType.ParenR, TokenType.Number]
-# non_terminals_tokens = 
-
-symbols_tokens = {
+terminal_tokens = {
     ';'   : TokenType.semicolon,
     '{'   : TokenType.obrace,
     '}'   : TokenType.cbrace,
@@ -119,10 +115,9 @@ symbols_tokens = {
     
     '\"'  : TokenType.double_quoat,
     
-    '=='  : TokenType.equal_equal
-}
+    '=='  : TokenType.equal_equal,
 
-keywords_tokens = {
+
     'new'      : TokenType.New,
     'as'       : TokenType.As,
     'print'    : TokenType.Print,
