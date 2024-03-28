@@ -30,8 +30,8 @@ regex_grammar = AttributeGrammar(
         ('CharacterRange', ['Character', '-', 'Character'], lambda s: char_range(s[0], s[2])),
         ('Character', ['EscapeSequence'], lambda s: s[0]),
         ('Character', ['Char'], lambda s: s[0])]
-    + [('Char', [_char], lambda s: char(s[0])) for _char in regular]
-    + [('EscapeSequence', ['\\', _char], lambda s: char(s[1])) for _char in special])
+    + [('Char', [ch], lambda s: char(s[0])) for ch in regular]
+    + [('EscapeSequence', ['\\', ch], lambda s: char(s[1])) for ch in special])
 
 regex_parse = build_slr_parser(regex_grammar)
 
@@ -40,9 +40,9 @@ regex_parse = build_slr_parser(regex_grammar)
 class regex:
 
     def __init__(self, pattern):
-        self.pattern = list(pattern) + [regex_grammar.eof_symbol]
-        self.nfa = regex_parse(self.pattern)
+        self.nfa = regex_parse(list(pattern) + [0])
         self.recognizer = build_recognizer(self.nfa)
 
-    def match(self, _string):
-        return self.recognizer(list(_string) + [regex_grammar.eof_symbol])
+    def match(self, input_str):
+        ok, i = self.recognizer(list(input_str) + [0])
+        return ok, i, input_str[:i]
