@@ -1,5 +1,3 @@
-from enum import Enum
-
 import regex
 from parsing import AttributeGrammar, build_slr_parser
 from utils import Token
@@ -44,69 +42,58 @@ print(re.match('listen carefully Natasha cough! cough cough! the secret code is 
 
 ##########################
 
-TokenType = Enum('TokenType', [
-    # Non-terminals
-    'Start', 'ArithmeticExpression', 'Term', 'USub', 'Factor', 'Base', 'PossibleArguments',
-    # Terminals
-    'Plus', 'Sub', 'Prod', 'Div', 'Rem', 'Pow', 'ParenL', 'ParenR',
-    # Terminals in this context
-    'Number',
-    # Extra
-    'EOF'
-])
+EOF, Start, ArithmeticExpression, Term, USub, Factor, Base, Plus, Sub, Prod, Div, Rem, Pow, ParenL, ParenR, Number = range(16)
 
-# noinspection PyUnresolvedReferences
 arith = AttributeGrammar(
-    [TokenType.Plus, TokenType.Sub, TokenType.Prod, TokenType.Div, TokenType.Rem, TokenType.Pow, TokenType.ParenL,
-     TokenType.ParenR, TokenType.Number],
+    [Plus, Sub, Prod, Div, Rem, Pow, ParenL, ParenR, Number],
     [
-        (TokenType.Start, [TokenType.ArithmeticExpression],
-         lambda s: Token(0, 0, _type=TokenType.Start, lexeme=s[0].lexeme)),
+        (Start, [ArithmeticExpression],
+         lambda s: Token(0, 0, _type=Start, lexeme=s[0].lexeme)),
 
         # ArithmeticExpression
-        (TokenType.ArithmeticExpression, [TokenType.ArithmeticExpression, TokenType.Plus, TokenType.Term],
-         lambda s: Token(0, 0, _type=TokenType.ArithmeticExpression, lexeme=s[0].lexeme + s[2].lexeme)),
+        (ArithmeticExpression, [ArithmeticExpression, Plus, Term],
+         lambda s: Token(0, 0, _type=ArithmeticExpression, lexeme=s[0].lexeme + s[2].lexeme)),
 
-        (TokenType.ArithmeticExpression, [TokenType.ArithmeticExpression, TokenType.Sub, TokenType.Term],
-         lambda s: Token(0, 0, _type=TokenType.ArithmeticExpression, lexeme=s[0].lexeme - s[2].lexeme)),
+        (ArithmeticExpression, [ArithmeticExpression, Sub, Term],
+         lambda s: Token(0, 0, _type=ArithmeticExpression, lexeme=s[0].lexeme - s[2].lexeme)),
 
-        (TokenType.ArithmeticExpression, [TokenType.Term],
-         lambda s: Token(0, 0, _type=TokenType.ArithmeticExpression, lexeme=s[0].lexeme)),
+        (ArithmeticExpression, [Term],
+         lambda s: Token(0, 0, _type=ArithmeticExpression, lexeme=s[0].lexeme)),
 
         # Term
-        (TokenType.Term, [TokenType.Term, TokenType.Prod, TokenType.USub],
-         lambda s: Token(0, 0, _type=TokenType.Term, lexeme=s[0].lexeme * s[2].lexeme)),
+        (Term, [Term, Prod, USub],
+         lambda s: Token(0, 0, _type=Term, lexeme=s[0].lexeme * s[2].lexeme)),
 
-        (TokenType.Term, [TokenType.Term, TokenType.Div, TokenType.USub],
-         lambda s: Token(0, 0, _type=TokenType.Term, lexeme=s[0].lexeme / s[2].lexeme)),
+        (Term, [Term, Div, USub],
+         lambda s: Token(0, 0, _type=Term, lexeme=s[0].lexeme / s[2].lexeme)),
 
-        (TokenType.Term, [TokenType.Term, TokenType.Rem, TokenType.USub],
-         lambda s: Token(0, 0, _type=TokenType.Term, lexeme=s[0].lexeme % s[2].lexeme)),
+        (Term, [Term, Rem, USub],
+         lambda s: Token(0, 0, _type=Term, lexeme=s[0].lexeme % s[2].lexeme)),
 
-        (TokenType.Term, [TokenType.USub],
-         lambda s: Token(0, 0, _type=TokenType.Term, lexeme=s[0].lexeme)),
+        (Term, [USub],
+         lambda s: Token(0, 0, _type=Term, lexeme=s[0].lexeme)),
 
         # USub
-        (TokenType.USub, [TokenType.Factor],
-         lambda s: Token(0, 0, _type=TokenType.USub, lexeme=s[0].lexeme)),
+        (USub, [Factor],
+         lambda s: Token(0, 0, _type=USub, lexeme=s[0].lexeme)),
 
-        (TokenType.USub, [TokenType.Sub, TokenType.Factor],
-         lambda s: Token(0, 0, _type=TokenType.USub, lexeme=-s[1].lexeme)),
+        (USub, [Sub, Factor],
+         lambda s: Token(0, 0, _type=USub, lexeme=-s[1].lexeme)),
 
         # Factor
-        (TokenType.Factor, [TokenType.Base],
-         lambda s: Token(0, 0, _type=TokenType.Factor, lexeme=s[0].lexeme)),
+        (Factor, [Base],
+         lambda s: Token(0, 0, _type=Factor, lexeme=s[0].lexeme)),
 
-        (TokenType.Factor, [TokenType.Base, TokenType.Pow, TokenType.Factor],
-         lambda s: Token(0, 0, _type=TokenType.Factor, lexeme=s[0].lexeme ** s[2].lexeme)),
+        (Factor, [Base, Pow, Factor],
+         lambda s: Token(0, 0, _type=Factor, lexeme=s[0].lexeme ** s[2].lexeme)),
 
         # Base
-        (TokenType.Base, [TokenType.Number],
-         lambda s: Token(0, 0, _type=TokenType.Base, lexeme=s[0].lexeme)),
+        (Base, [Number],
+         lambda s: Token(0, 0, _type=Base, lexeme=s[0].lexeme)),
 
-        (TokenType.Base, [TokenType.ParenL, TokenType.ArithmeticExpression, TokenType.ParenR],
-         lambda s: Token(0, 0, _type=TokenType.Base, lexeme=s[1].lexeme))
-    ], eof_symbol=TokenType.EOF)
+        (Base, [ParenL, ArithmeticExpression, ParenR],
+         lambda s: Token(0, 0, _type=Base, lexeme=s[1].lexeme))
+    ], eof_symbol=EOF)
 
 parse = build_slr_parser(arith, by=lambda t: t.type)
 
@@ -114,22 +101,22 @@ code = '1 + 2 ^ 2 * 2 ^ (1 + 1 - 1)'
 
 # noinspection PyUnresolvedReferences
 tokens = [
-    Token(0, 0, _type=TokenType.Number, lexeme=1),
-    Token(0, 0, _type=TokenType.Plus, lexeme=0),
-    Token(0, 0, _type=TokenType.Number, lexeme=2),
-    Token(0, 0, _type=TokenType.Pow, lexeme=0),
-    Token(0, 0, _type=TokenType.Number, lexeme=2),
-    Token(0, 0, _type=TokenType.Prod, lexeme=0),
-    Token(0, 0, _type=TokenType.Number, lexeme=2),
-    Token(0, 0, _type=TokenType.Pow, lexeme=0),
-    Token(0, 0, _type=TokenType.ParenL, lexeme=0),
-    Token(0, 0, _type=TokenType.Number, lexeme=1),
-    Token(0, 0, _type=TokenType.Plus, lexeme=0),
-    Token(0, 0, _type=TokenType.Number, lexeme=1),
-    Token(0, 0, _type=TokenType.Sub, lexeme=0),
-    Token(0, 0, _type=TokenType.Number, lexeme=1),
-    Token(0, 0, _type=TokenType.ParenR, lexeme=0),
-    Token(0, 0, _type=TokenType.EOF, lexeme=0),
+    Token(0, 0, _type=Number, lexeme=1),
+    Token(0, 0, _type=Plus, lexeme=0),
+    Token(0, 0, _type=Number, lexeme=2),
+    Token(0, 0, _type=Pow, lexeme=0),
+    Token(0, 0, _type=Number, lexeme=2),
+    Token(0, 0, _type=Prod, lexeme=0),
+    Token(0, 0, _type=Number, lexeme=2),
+    Token(0, 0, _type=Pow, lexeme=0),
+    Token(0, 0, _type=ParenL, lexeme=0),
+    Token(0, 0, _type=Number, lexeme=1),
+    Token(0, 0, _type=Plus, lexeme=0),
+    Token(0, 0, _type=Number, lexeme=1),
+    Token(0, 0, _type=Sub, lexeme=0),
+    Token(0, 0, _type=Number, lexeme=1),
+    Token(0, 0, _type=ParenR, lexeme=0),
+    Token(0, 0, _type=EOF, lexeme=0),
 ]
 
 print(parse(tokens).lexeme)
