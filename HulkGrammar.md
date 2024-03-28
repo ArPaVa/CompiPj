@@ -4,15 +4,15 @@ Program -> Body Exp
 Body -> FunctionList Body | ClassList Body | Epsilon
 
 Exp -> Expression ; | BlockExpression
-PExp -> Expression  | BlockExpression
+SubExp -> Expression  | BlockExpression
 <!-- As the documentation is not clear, we will asume a BlockExpression cannot have a BlockExpresion inside -->
-BlockExpression -> { ExpressionList } Pc
+BlockExpression -> { ExpressionList } EndOfStatment
 
-Pc  -> ; | Epsilon
+EndOfStatment  -> ; | Epsilon
 
 Expression -> PrintExpression | ArithmeticExpression | LetExpression | DestructiveExpression | IfExpression | WhileExpression
 
-Value -> String | ArithmeticExpression | LetExpression | DestructiveExpression | IfExpression | new Identifier ( Arguments ) | Identifier as Identifier | Vector
+Value -> StringExpresion | ArithmeticExpression | LetExpression | DestructiveExpression | IfExpression | new Identifier ( ArgumentList ) | Identifier as Identifier | Vector
 
 Vector -> [ Explicit ] | [ Expression "||" Iterable ]
 
@@ -33,7 +33,7 @@ ExpressionList -> Expression  | Expression ; ExpressionList
 
     PosibleArguments -> ( ArgumentList ) | . Identifier PosibleArguments | [ ArithmeticExpression ] PossibleArguments | Epsilon
 
-    ArgumentList -> ArithmeticExpression | ArithmeticExpression , ArgumentList | Epsilon
+    ArgumentList -> ArithmeticExpression | String | ArithmeticExpression , ArgumentList | String , ArgumentList | Epsilon
 
 # PrintExpression
     PrintExpression -> print ( CanPrint )
@@ -59,7 +59,7 @@ FuctionList -> Function | Fuction FunctionList | Epsilon
 # Variables
 LetExpression -> let AssignList in AfterIn
 
-AfterIn -> Exp | LetExpression | ( Expression ) Pc
+AfterIn -> Exp | LetExpression | ( Expression ) EndOfStatment
 
 AssignList -> Identifier TypeCheck = Value | Identifier TypeCheck = Value , AssignList
 
@@ -67,11 +67,11 @@ DestructiveExpression -> Identifier := Value
 
 # Conditionals
 
-IfExpression -> if ( ConditionalExpression ) PExp ElseExpression
+IfExpression -> if ( ConditionalExpression ) SubExp ElseExpression
 
-ElseExpression -> elif ( ConditionalExpression ) PExp ElseExpression | else Expression
+ElseExpression -> elif ( ConditionalExpression ) SubExp ElseExpression | else Expression
 
-ConditionalExpression -> Not | Nor & ConditionalExpresion | Nor "|" ConditionalExpresion
+ConditionalExpression -> Nor | Nor & ConditionalExpresion | Nor "|" ConditionalExpresion
 
 Nor -> Comparable | ! Comparable
 
@@ -112,10 +112,7 @@ ProtocolsMethods -> Identifier ( Params ) : Identifier => Exp | Identifier ( Par
 
 MethodDefList -> ProtocolsMethods MethodDefList | ProtocolsMethods
 
-
-literals -> Numbers | String | boolean
-
-Numbers -> [1-9] NextNumbers Decimal
+Number -> [1-9] NextNumbers Decimal
 Decimal -> . [0-9] NextNumbers | Epsilon
 NextNumbers ->  [0-9] NextNumbers | Epsilon
 
