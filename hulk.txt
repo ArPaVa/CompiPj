@@ -48,6 +48,7 @@ Expression -> Expression '+' Term
             | Expression '-' Term
             | Expression '@''@'? Term
             | StructuredExpression
+            | BoolExpression
             | Term
 
 Term -> Term '*' UnarySub
@@ -86,29 +87,27 @@ AssignmentList -> AssignmentList ',' Assignment
 
 DestructiveAssignment -> Identifier ':=' Expression
 
-ConditionalExpression -> 'if' '(' BooleanExpression ')' Expression ChainedConditional
+ConditionalExpression -> 'if' '(' Expression ')' Expression ChainedConditional
 
-BooleanExpression -> Nor 
-                | BooleanExpression '&' Nor 
-                | BooleanExpression '|' Nor
+BoolExpression -> BoolExpression '&' Nor
+                | BoolExpression '|' Nor
+                | Nor
 
-Nor -> Comparable       
-     | '!' Comparable
+Nor -> '!' Predicate
+     | Predicate
 
-Comparable -> BoolLiteral 
-                | Expression '<' Expression 
-                | Expression '<=' Expression 
-                | Expression '>' Expression 
-                | Expression '>=' Expression 
-                | Expression '==' Expression 
-                | Expression '!=' Expression 
-                | TypeTestExpression 
+Predicate -> Expression '<' Expression
+           | Expression '<=' Expression
+           | Expression '>' Expression
+           | Expression '>=' Expression
+           | Expression '==' Expression
+           | Expression '!=' Expression
+           | TypeTestExpression
 
-
-ChainedConditional -> 'elif' '(' BooleanExpression ')' Expression ChainedConditional
+ChainedConditional -> 'elif' '(' Expression ')' Expression ChainedConditional
                     | 'else' Expression
 
-WhileExpression -> 'while' '(' BooleanExpression ')' Expression
+WhileExpression -> 'while' '(' Expression ')' Expression
 
 ForExpression -> 'for' '(' Iterator ')' Expression
 
@@ -130,13 +129,12 @@ PrimitiveExpression -> NumericLiteral
                      | VectorLiteral
                      | CallExpression
                      | Access
-                     | BooleanExpression
 
 NumericLiteral -> [0-9]+|[0-9]*.[0-9]+
 
 StringLiteral -> '"' ([^"]|\"|\n\t)* '"'
 
-Identifier -> [_a-zA-Z][-a-zA-Z0-9]*
+Identifier -> [_a-zA-Z][_a-zA-Z0-9]*
 
 BoolLiteral -> 'true'
              | 'false'
