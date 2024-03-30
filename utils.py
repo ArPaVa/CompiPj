@@ -6,203 +6,95 @@ class Token:
         self.type = _type
         self.lexeme = lexeme
     def __str__(self) -> str:
-        return f"{self.lexeme} {self.type}"
+        return f"{self.lexeme} {self.type}. ln={self.line} col={self.column}"
+        #return f"{self.type}"
     def __repr__(self) -> str:
         return self.__str__()
 
 from enum import Enum
-TokenType = Enum('TokenType', [
-    ## Main
+TType = Enum('TType', [
     # Non-terminals
-    'Program', 'Body', 'Exp', 'ClassList', 'Expression', 'BlockExpression', 'ExpressionList',
-    'EndOfStatment', 'Value', 'ArgumentList', 'Vector', 'Explicit', 'Iterable', 'SubExp',
-    # Terminals
-    'semicolon', 'obrace', 'cbrace', 'opar', 'cpar', 'New', 'identifier', 'As', 'obracket',
-    'cbracket', 'generator', 'comma', 'equal',
+    'Access', 'Arguments', 'Assignment', 'AssignmentList', 'BlockExpression', 'BoolLiteral', 'BooleanExpression', 
+    'CallExpression', 'ChainedConditional', 'Comparable', 'ConditionalExpression', 'Constructor', 'DestructiveAssignment', 
+    'DowncastExpression', 'Expression', 'ExpressionList', 'Extends', 'Factor', 'ForExpression', 'FunctionBlock', 
+    'FunctionDefinition', 'FunctionHead', 'HulkProgram', 'Identifier', 'Inheritance', 'Iterator', 'LetExpression', 
+    'MemberDefinitions', 'MethodDeclarations', 'Nor', 'NumericLiteral', 'Params', 'PowBase', 'PrimitiveExpression', 
+    'ProtocolBlock', 'ProtocolDefinition', 'StringLiteral', 'StructuredExpression', 'Term', 'TopLevelDefinitions', 
+    'TypeAnnotation', 'TypeBlock', 'TypeDefinition', 'TypeInstantiation', 'TypeTestExpression', 'TypedIdentifier', 
+    'UnarySub', 'VectorLiteral', 'WhileExpression', 
 
-    ## ArithmeticExpression
-    # Non-terminals
-    'ArithmeticExpression', 'Term', 'Usub', 'Factor', 'Base', 'PosibleArguments',
-    # Terminals    
-    'minus', 'plus', 'mult', 'div', 'rest', 'potency', 'number', 'dot',
+    # Terminals
+    '_not', 'not_equal', 'double_quote', 'mod', '_and', 'opar', 'cpar', 'mult', 'plus', 'comma', 'minus', 'dot', 
+    'div', 'two_dots', 'dequal', 'semicolon', 'less', 'less_equal', 'equal', 'equal_equal', '_lambda', 'greater', 
+    'greater_equal', 'at_sign', 'double_at_sign', 'obracket', 'cbracket', 'potency', 'obrace', 'cbrace', '_or', 'generator',
+    'string_chain', 'number', 'identifier', 
+    '_as', '_elif', '_else', 'extends', 'false', '_for', 'function', '_if', '_in', '_inherit', '_is', 'let', '_new', 
+    'protocol', 'true', 'type', '_while',
 
-    ## PrintExpression
-    # Non-terminals
-    'PrintExpression', 'CanPrint',
-    # Terminals
-    'Print',
-    ## StringExpression
-    # Non-terminals
-    'StringExpresion', 'ConcatString', ''
-    # Terminals
-    'string', 'at_sign', #'double_quote',# lo quite para cojer los strings empezando por ahí
-
-    ## Functions
-    # Non-terminals
-    'Function', 'FunctionList', 'FunctionHeader', 'Params',
-    # Terminals
-    'Lambda', 'function',
-
-    ## Variables
-    # Non-terminals
-    'LetExpression', 'AssignList', 'AfterIn', 'DestructiveExpression',
-    # Terminals
-    'Let', 'In', 'dequal',
-
-    ## Conditionals
-    # Non-terminals
-    'IfExpression', 'ConditionalExpression', 'ElseExpression', 'Nor', 'Comparable',
-    # Terminals
-    'If', 'Elif', 'Else', 'And', 'Or', 'Not', 'true', 'false', 'greater', 'greater_equal',
-    'less', 'less_equal', 'equal_equal', 'not_equal', 'Is', 
-
-    ##Loops
-    # Non-terminals
-    'WhileExpression', 'ForExpression',
-    # Terminals
-    'While', 'For', 
-
-    ## Types/TypesChecking
-    # Non-terminals
-    'TypeDeclaration', 'TypeParams', 'Inherit', 'TypeBody', 'AttributeDef', 'MethodDef', 'TypeCheck',
-    # Terminals
-    'type', '_inherit', 'two_dots',
-
-    ##Protocols
-    # Non-terminals
-    'ProtocolDefinition', 'MethodDefList', 'ProtocolsMethods',
-    # Terminals
-    'protocol',
-    # Non-terminals
-    # Terminals
-    # Terminals in this context
-
-    # Extra
     'EOF'
 ])
-# TODO it should'n be needed 2 dict one fpr the regex to work, and one to have the actual terminals
+
 terminal_tokens = {
-    ';'   : TokenType.semicolon,
-    '{'   : TokenType.obrace,
-    '}'   : TokenType.cbrace,
-    '('   : TokenType.opar,
-    ')'   : TokenType.cpar,
-    '['   : TokenType.obracket,
-    ']'   : TokenType.cbracket,
-    '||'  : TokenType.generator,
-    ','   : TokenType.comma,
-    '='   : TokenType.equal,
-    '$'   : TokenType.EOF, ##Not sure about the $
+    ';'   : TType.semicolon,
+    '{'   : TType.obrace,
+    '}'   : TType.cbrace,
+    '('   : TType.opar,
+    ')'   : TType.cpar,
+    '['   : TType.obracket,
+    ']'   : TType.cbracket,
+    '||'  : TType.generator,
+    ','   : TType.comma,
+    '='   : TType.equal,
+    '+'   : TType.plus,
+    '-'   : TType.minus,
+    '*'   : TType.mult,
+    '/'   : TType.div,
+    '%'   : TType.mod,
+    '^'   : TType.potency,
+    '.'   : TType.dot,    
+    '=>'  : TType._lambda,
+    ':='  : TType.dequal,
+    '@'   : TType.at_sign,
+    '@@'   : TType.double_at_sign,
+    '&'   : TType._and,
+    '|'   : TType._or,
+    '!'   : TType._not,
+    '>'   : TType.greater,
+    '>='  : TType.greater_equal,
+    '<'   : TType.less,
+    '<='  : TType.less_equal,
+    '!='  : TType.not_equal,
+    '=='  : TType.equal_equal,
+    ':'   : TType.two_dots,    
+    '\"'  : TType.double_quote,    
 
-    '+'   : TokenType.plus,
-    '-'   : TokenType.minus,
-    '*'   : TokenType.mult,
-    '/'   : TokenType.div,
-    '%'   : TokenType.rest,
-    '^'   : TokenType.potency,
-    '.'   : TokenType.dot,
-    
-    '=>'  : TokenType.Lambda,
+    'new'      : TType._new,
+    'as'       : TType._as,
+    # 'print'    : TType._print,
+    'function' : TType.function,
+    'let'      : TType.let,
+    'in'       : TType._in,
 
-    ':='  : TokenType.dequal,
-    '@'   : TokenType.at_sign,
-    '&'   : TokenType.And,
-    '|'   : TokenType.Or,
-    '!'   : TokenType.Not,
-    '>'   : TokenType.greater,
-    '>='  : TokenType.greater_equal,
-    '<'   : TokenType.less,
-    '<='  : TokenType.less_equal,
-    '!='  : TokenType.not_equal,
+    'if'       : TType._if,
+    'elif'     : TType._elif,
+    'else'     : TType._else,
 
-    ':'   : TokenType.two_dots,
-    
-    # '\"'  : TokenType.double_quote,
-    
-    '=='  : TokenType.equal_equal,
-
-
-    'new'      : TokenType.New,
-    'as'       : TokenType.As,
-    'print'    : TokenType.Print,
-    'function' : TokenType.Function,
-    'let'      : TokenType.Let,
-    'in'       : TokenType.In,
-
-    'if'       : TokenType.If,
-    'elif'     : TokenType.Elif,
-    'else'     : TokenType.Else,
-
-    'true'     : TokenType.true,
-    'false'    : TokenType.false,
-    'is'       : TokenType.Is,
+    'true'     : TType.true,
+    'false'    : TType.false,
+    'is'       : TType._is,
   
-    'while'    : TokenType.While,
-    'for'      : TokenType.For,    
-    'type'     : TokenType.type,
-    'inherit'  : TokenType._inherit,
-    'protocol' : TokenType.protocol
+    'while'    : TType._while,
+    'for'      : TType._for,    
+    'type'     : TType.type,
+    'inherit'  : TType._inherit,
+    'protocol' : TType.protocol,
+    'extends'  : TType.extends,
+    # '$'   : TType.EOF, ##Not sure about the $
 }
 
-escape_terminal_tokens = {
-    ';'   : TokenType.semicolon,
-    '{'   : TokenType.obrace,
-    '}'   : TokenType.cbrace,
-    '\\('   : TokenType.opar,
-    '\\)'   : TokenType.cpar,
-    '\\['   : TokenType.obracket,
-    '\\]'   : TokenType.cbracket,
-    '\\|\\|'  : TokenType.generator,
-    ','   : TokenType.comma,
-    '='   : TokenType.equal,
-    '$'   : TokenType.EOF, ##Not sure about the $
+generate_hulk_terminals = [';', '{', '}', '\\(', '\\)', '\\[', '\\]', '\\|\\|', ',', '=', '\\+', '\\-', '\\*', '/', '%', 
+                           '^', '.', '=>', ':=', '@', '@@', '&', '\\|', '!', '>', '>=', '<', '<=', '!=', '==', ':', #'"', 
+                           'new', 'as', 'function', 'let', 'in', 'if', 'elif', 'else', 'true', 'false', 'is', 
+                           'while', 'for', 'type', 'inherit', 'protocol', 'extends', '"([^"]|\"|\n\t)*"' , '[0-9]+|[0-9]*.[0-9]+', '[_a-zA-Z][_a-zA-Z0-9]*']
+#generate_hulk_terminals = {'[_a-zA-Z][_a-zA-Z0-9]*'}
 
-    '\\+'   : TokenType.plus,
-    '\\-'   : TokenType.minus,
-    '\\*'   : TokenType.mult,
-    '/'   : TokenType.div,
-    '%'   : TokenType.rest,
-    '^'   : TokenType.potency,
-    '.'   : TokenType.dot,
-    
-    '=>'  : TokenType.Lambda,
-
-    ':='  : TokenType.dequal,
-    '@'   : TokenType.at_sign,
-    '&'   : TokenType.And,
-    '\\|'   : TokenType.Or,
-    '!'   : TokenType.Not,
-    '>'   : TokenType.greater,
-    '>='  : TokenType.greater_equal,
-    '<'   : TokenType.less,
-    '<='  : TokenType.less_equal,
-    '!='  : TokenType.not_equal,
-
-    ':'   : TokenType.two_dots,
-    
-    # '\"'  : TokenType.double_quote,
-    
-    '=='  : TokenType.equal_equal,
-
-
-    'new'      : TokenType.New,
-    'as'       : TokenType.As,
-    'print'    : TokenType.Print,
-    'function' : TokenType.Function,
-    'let'      : TokenType.Let,
-    'in'       : TokenType.In,
-
-    'if'       : TokenType.If,
-    'elif'     : TokenType.Elif,
-    'else'     : TokenType.Else,
-
-    'true'     : TokenType.true,
-    'false'    : TokenType.false,
-    'is'       : TokenType.Is,
-  
-    'while'    : TokenType.While,
-    'for'      : TokenType.For,    
-    'type'     : TokenType.type,
-    'inherit'  : TokenType._inherit,
-    'protocol' : TokenType.protocol
-}
