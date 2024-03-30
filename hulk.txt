@@ -44,9 +44,9 @@ ProtocolBlock -> '{' MethodDeclarations '}'
 MethodDeclarations -> MethodDeclarations FunctionHead ';'
                     | <epsilon>
 
-Expression -> Expression + Term
-            | Expression - Term
-            | Expression @@? Term
+Expression -> Expression '+' Term
+            | Expression '-' Term
+            | Expression '@''@'? Term
             | StructuredExpression
             | Term
 
@@ -86,12 +86,29 @@ AssignmentList -> AssignmentList ',' Assignment
 
 DestructiveAssignment -> Identifier ':=' Expression
 
-ConditionalExpression -> 'if' '(' Expression ')' Expression ChainedConditional
+ConditionalExpression -> 'if' '(' BooleanExpression ')' Expression ChainedConditional
 
-ChainedConditional -> 'elif' '(' Expression ')' Expression ChainedConditional
+BooleanExpression -> Nor 
+                | BooleanExpression '&' Nor 
+                | BooleanExpression '|' Nor
+
+Nor -> Comparable       
+     | '!' Comparable
+
+Comparable -> BoolLiteral 
+                | Expression '<' Expression 
+                | Expression '<=' Expression 
+                | Expression '>' Expression 
+                | Expression '>=' Expression 
+                | Expression '==' Expression 
+                | Expression '!=' Expression 
+                | TypeTestExpression 
+
+
+ChainedConditional -> 'elif' '(' BooleanExpression ')' Expression ChainedConditional
                     | 'else' Expression
 
-WhileExpression -> 'while' '(' Expression ')' Expression
+WhileExpression -> 'while' '(' BooleanExpression ')' Expression
 
 ForExpression -> 'for' '(' Iterator ')' Expression
 
@@ -113,6 +130,7 @@ PrimitiveExpression -> NumericLiteral
                      | VectorLiteral
                      | CallExpression
                      | Access
+                     | BooleanExpression
 
 NumericLiteral -> [0-9]+|[0-9]*.[0-9]+
 
