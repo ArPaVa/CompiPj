@@ -66,7 +66,7 @@ terminal_tokens = {
     '!='  : TType.not_equal,
     '=='  : TType.equal_equal,
     ':'   : TType.two_dots,    
-    '\"'  : TType.double_quote,    
+    # '\"'  : TType.double_quote,    
 
     'new'      : TType._new,
     'as'       : TType._as,
@@ -92,9 +92,9 @@ terminal_tokens = {
     # '$'   : TType.EOF, ##Not sure about the $
 }
 
-generate_hulk_terminals = [';', '{', '}', '\\(', '\\)', '\\[', '\\]', '\\|\\|', ',', '=', '\\+', '\\-', '\\*', '/', '%', 
+generate_hulk_terminals = [ '[_a-zA-Z][_a-zA-Z0-9]*' , '[0-9]+|[0-9]+.[0-9]+', ';', '{', '}', '\\(', '\\)', '\\[', '\\]', '\\|\\|', ',', '=', '\\+', '\\-', '\\*', '/', '%', 
                            '^', '.', '=>', ':=', '@', '@@', '&', '\\|', '!', '>', '>=', '<', '<=', '!=', '==', ':', #'"', 
                            'new', 'as', 'function', 'let', 'in', 'if', 'elif', 'else', 'true', 'false', 'is', 
-                           'while', 'for', 'type', 'inherit', 'protocol', 'extends', '"([^"]|\"|\n\t)*"' , '[0-9]+|[0-9]*.[0-9]+', '[_a-zA-Z][_a-zA-Z0-9]*']
-#generate_hulk_terminals = {'[_a-zA-Z][_a-zA-Z0-9]*'}
+                           'while', 'for', 'type', 'inherit', 'protocol', 'extends','\"([^\\\\"]|\\\\"|\\\\n\\\\t)*\"' ] #, 
+# generate_hulk_terminals = {'\\+', '\\-', '[_a-zA-Z][_a-zA-Z0-9]*'}
 

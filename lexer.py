@@ -41,51 +41,12 @@ def tokenize(regular_grammar, code:str):
             token_list.append(utils.Token(line, column, token_type, lexeme))
             column += jump
             code = code[jump:]
-        #else:
-        #     nextchar = code[0]
-        #     if nextchar == "\"": # beginning a string
-        #         stringchain =""
-        #         i = 1
-        #         while i < len(code) and code[i] != "\"":
-        #             stringchain += code[i]
-        #             i+=1
-        #         if i >= len(code):
-        #             raise Exception()
-        #         token_list.append(utils.Token(line, column, utils.TType.string, stringchain))
-        #         column += i+1
-        #         code = code [i+1:]
-        #     elif nextchar.isalpha() or nextchar == '_': # beginning a identifier
-        #         ident = ""
-        #         i = 0
-        #         while i < len(code) and (code[i].isalnum() or code[i] == '_'):
-        #             ident += code[i]
-        #             i+=1
-        #         if i >= len(code):
-        #             raise Exception()
-        #         token_list.append(utils.Token(line, column, utils.TType.identifier, ident))
-        #         column += i
-        #         code = code [i:]
-        #     elif nextchar.isdigit(): # beginning a number
-        #         number_s = ""
-        #         i = 0
-        #         decimal = False
-        #         while i < len(code) and (code[i].isdigit() or (code[i] == '.' and not decimal)):
-        #             if code[i] == '.':
-        #                 decimal = True
-        #             number_s += code[i]
-        #             i+=1
-        #         if i >= len(code):
-        #             raise Exception()
-        #         number = float(number_s) if '.' in number_s else int(number_s)
-        #         token_list.append(utils.Token(line, column, utils.TType.number, number))
-        #         column += i
-        #         code = code [i:]
-        #     else: 
-        #         raise Exception()
-
-        # print(token_list)
+        else:
+            
+            raise Exception(f"Sintactic error at Line {line}, Column {column}")
     
     # TODO return if ok or if error, and which error
+    token_list.append(utils.Token(line, column, utils.TType.EOF,''))
     return token_list
 
 def hulk_regular_expressions() -> str:
@@ -93,7 +54,7 @@ def hulk_regular_expressions() -> str:
     reg_expressions = "|".join(terminals_list)
     return reg_expressions
 
-#codigo = ' 34 +15; \n print(a); \n   let abc= (  345.678.45    )    =    {  }    '
-codigo = ' 34 + 15;'
+# codigo = ' 34 +15; \n print(a); \n   let abc= (  345.678.45  @@ " uigrbrgr +tyh+n )&=/&C=V rVe \' \\n \\t grhgj14"  )    =    {  }    '
+codigo = ' let abc= (  345.678.45  @@ \"^\" uigrbrgr +tyh+n )&=/&C=V rVe \' \\n \\t grhgj14\"  )'
 
 print(tokenize(hulk_regular_expressions(), codigo))
