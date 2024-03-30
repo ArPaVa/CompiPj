@@ -1,0 +1,133 @@
+HulkProgram -> TopLevelDefinitions Expression
+
+TopLevelDefinitions -> TopLevelDefinitions FunctionDefinition
+                     | TopLevelDefinitions TypeDefinition
+                     | TopLevelDefinitions ProtocolDefinition
+                     | <epsilon>
+
+FunctionDefinition -> 'function' FunctionHead FunctionBlock
+
+FunctionHead -> Identifier '(' Arguments ')' TypeAnnotation?
+
+FunctionBlock -> BlockExpression
+               | '=>' Expression
+
+Arguments -> Arguments ',' TypedIdentifier
+           | TypedIdentifier
+           | <epsilon>
+
+TypedIdentifier -> Identifier TypeAnnotation?
+
+TypeAnnotation -> ':' Identifier
+
+TypeDefinition -> 'type' Constructor Inheritance? TypeBlock
+
+Constructor -> Identifier '(' Arguments ')'
+             | Identifier
+
+Inheritance -> 'inherits' Identifier
+
+TypeBlock -> '{' MemberDefinitions '}'
+
+MemberDefinitions -> MemberDefinitions Assignment ';'
+                   | MemberDefinitions FunctionHead FunctionBlock ';'
+                   | <epsilon>
+
+Assignment -> TypedIdentifier '=' Expression
+
+ProtocolDefinition -> 'protocol' Identifier Extends? ProtocolBlock
+
+Extends -> 'extends' Identifier
+
+ProtocolBlock -> '{' MethodDeclarations '}'
+
+MethodDeclarations -> MethodDeclarations FunctionHead ';'
+                    | <epsilon>
+
+Expression -> Expression + Term
+            | Expression - Term
+            | Expression @@? Term
+            | StructuredExpression
+            | Term
+
+Term -> Term '*' UnarySub
+      | Term '/' UnarySub
+      | Term '%' UnarySub
+      | UnarySub
+
+UnarySub -> '-' Factor
+          | Factor
+
+Factor -> PowBase '^' Factor
+        | PowBase
+
+PowBase -> '(' Expression ')'
+         | PrimitiveExpression
+
+StructuredExpression -> BlockExpression
+                      | LetExpression
+                      | DestructiveAssignment
+                      | ConditionalExpression
+                      | WhileExpression
+                      | ForExpression
+                      | TypeTestExpression
+                      | DowncastExpression
+                      | TypeInstantiation
+
+BlockExpression -> '{' ExpressionList '}' ';'?
+
+ExpressionList -> ExpressionList ';' Expression
+                | Expression ';'?
+
+LetExpression -> 'let' AssignmentList 'in' Expression
+
+AssignmentList -> AssignmentList ',' Assignment
+                | Assignment
+
+DestructiveAssignment -> Identifier ':=' Expression
+
+ConditionalExpression -> 'if' '(' Expression ')' Expression ChainedConditional
+
+ChainedConditional -> 'elif' '(' Expression ')' Expression ChainedConditional
+                    | 'else' Expression
+
+WhileExpression -> 'while' '(' Expression ')' Expression
+
+ForExpression -> 'for' '(' Iterator ')' Expression
+
+Iterator -> Identifier 'in' Expression
+
+TypeTestExpression -> Expression 'is' Identifier
+
+DowncastExpression -> Expression 'as' Identifier
+
+TypeInstantiation -> 'new' Identifier '(' Params ')'
+
+Params -> Params ',' Expression
+        | Expression
+        | <epsilon>
+
+PrimitiveExpression -> NumericLiteral
+                     | StringLiteral
+                     | BoolLiteral
+                     | VectorLiteral
+                     | CallExpression
+                     | Access
+
+NumericLiteral -> [0-9]+|[0-9]*.[0-9]+
+
+StringLiteral -> '"' ([^"]|\"|\n\t)* '"'
+
+Identifier -> [_a-zA-Z][-a-zA-Z0-9]*
+
+BoolLiteral -> 'true'
+             | 'false'
+
+VectorLiteral -> '[' Params ']'
+               | '[' Expression '||' Iterator ']'
+
+CallExpression -> Identifier '(' Params ')'
+
+Access -> Access '.' Identifier
+        | Access '[' Expression ']'
+        | Identifier

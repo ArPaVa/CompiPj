@@ -21,7 +21,6 @@ regex_grammar = AttributeGrammar(
         ('Match', ['CharacterGroup'], lambda s: s[0]),
         ('Match', ['Character'], lambda s: s[0]),
         ('Match', ['(', 'Expression', ')'], lambda s: s[1]),
-        # ('CharacterGroup', ['[', '^', 'CharacterGroupItems', ']'], lambda s: ~s[2]),
         ('CharacterGroup', ['[', 'CharacterGroupItems', ']'], lambda s: s[1]),
         ('CharacterGroupItems', ['CharacterGroupItems', 'CharacterGroupItem'], lambda s: s[0] | s[1]),
         ('CharacterGroupItems', ['CharacterGroupItem'], lambda s: s[0]),
@@ -40,9 +39,13 @@ regex_parse = build_slr_parser(regex_grammar)
 class regex:
 
     def __init__(self, pattern):
+        self.pattern = pattern
         self.nfa = regex_parse(list(pattern) + [0])
-        self.recognizer = build_recognizer(self.nfa)
+        self.recognize = build_recognizer(self.nfa)
 
-    def match(self, input_str):
-        ok, i = self.recognizer(list(input_str) + [0])
-        return ok, i, input_str[:i]
+    def __repr__(self):
+        return f'r\'{self.pattern}\''
+
+    def match(self, input_string):
+        match, index = self.recognize(list(input_string) + [0])
+        return match, index, input_string[:index]

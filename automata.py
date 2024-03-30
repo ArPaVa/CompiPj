@@ -2,7 +2,8 @@ import copy
 
 
 class NFA:
-    def __init__(self, initial=0, final=1, states=2, transitions=None):
+
+    def __init__(self, initial=0, final=1, states=2, transitions=None, **kwargs):
         # PyCharm did this
         if transitions is None:
             transitions = {}
@@ -11,6 +12,8 @@ class NFA:
         self.final = final
         self.states = states
         self.transitions = transitions
+
+        self.__dict__.update(kwargs)
 
     def __add__(self, other):
         new = self.copy()
@@ -42,14 +45,6 @@ class NFA:
                     [v + self.states for v in other.transitions[k1][k2]])
 
         return new
-
-    # def __invert__(self):
-    #     new = self.copy()
-    #     new.final = new.states
-    #     new.states += 1
-    #     for i in range(self.final):
-    #         new.transitions.setdefault(i, {}).setdefault(0, []).append(new.final)
-    #     return new
 
     def opt(self):
         new = self.copy()
@@ -116,19 +111,15 @@ class NFA:
 
 
 def char(ch):
-    new = NFA()
+    new = NFA(char=ch)
     new.transitions.setdefault(new.initial, {})[ch] = [new.final]
     return new
 
 
-def char_range(char1, char2):
+def char_range(start, end):
     new = NFA()
-    first = ord(list(char1.transitions[char1.initial].keys())[0])
-    last = ord(list(char2.transitions[char2.initial].keys())[0])
-
-    for ch in range(first, last + 1):
+    for ch in range(ord(start.char), ord(end.char) + 1):
         new.transitions.setdefault(new.initial, {})[chr(ch)] = [new.final]
-
     return new
 
 
