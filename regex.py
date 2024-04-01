@@ -43,9 +43,10 @@ class regex:
         self.nfa = regex_parse(list(pattern) + [0])
         self.recognize = build_recognizer(self.nfa)
 
-    def __repr__(self):
+    def __str__(self):
         return f'r\'{self.pattern}\''
 
-    def match(self, input_string):
-        match, index = self.recognize(list(input_string) + [0])
-        return match, index, input_string[:index]
+    # noinspection PyShadowingBuiltins
+    def match(self, input):
+        match, i = self.recognize(list(input) + [0])
+        return match, i, input[:i]

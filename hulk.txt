@@ -10,7 +10,7 @@ FunctionDefinition -> 'function' FunctionHead FunctionBlock
 FunctionHead -> Identifier '(' Arguments ')' TypeAnnotation?
 
 FunctionBlock -> BlockExpression
-               | '=>' Expression
+               | '=>' Expression ';'
 
 Arguments -> Arguments ',' TypedIdentifier
            | TypedIdentifier
@@ -25,7 +25,10 @@ TypeDefinition -> 'type' Constructor Inheritance? TypeBlock
 Constructor -> Identifier '(' Arguments ')'
              | Identifier
 
-Inheritance -> 'inherits' Identifier
+Inheritance -> 'inherits' BaseType
+
+BaseType -> Identifier
+          | CallExpression
 
 TypeBlock -> '{' MemberDefinitions '}'
 
@@ -49,6 +52,7 @@ Expression -> Expression '+' Term
             | Expression '@''@'? Term
             | StructuredExpression
             | BoolExpression
+            | Expression ';'
             | Term
 
 Term -> Term '*' UnarySub
@@ -59,11 +63,8 @@ Term -> Term '*' UnarySub
 UnarySub -> '-' Factor
           | Factor
 
-Factor -> PowBase '^' Factor
-        | PowBase
-
-PowBase -> '(' Expression ')'
-         | PrimitiveExpression
+Factor -> PrimitiveExpression '^' Factor
+        | PrimitiveExpression
 
 StructuredExpression -> BlockExpression
                       | LetExpression
@@ -77,8 +78,8 @@ StructuredExpression -> BlockExpression
 
 BlockExpression -> '{' ExpressionList '}' ';'?
 
-ExpressionList -> ExpressionList ';' Expression
-                | Expression ';'?
+ExpressionList -> ExpressionList Expression ';'
+                | <epsilon>
 
 LetExpression -> 'let' AssignmentList 'in' Expression
 
@@ -111,7 +112,7 @@ WhileExpression -> 'while' '(' Expression ')' Expression
 
 ForExpression -> 'for' '(' Iterator ')' Expression
 
-Iterator -> Identifier 'in' Expression
+Iterator -> TypedIdentifier 'in' Expression
 
 TypeTestExpression -> Expression 'is' Identifier
 
@@ -123,7 +124,8 @@ Params -> Params ',' Expression
         | Expression
         | <epsilon>
 
-PrimitiveExpression -> NumericLiteral
+PrimitiveExpression -> '(' Expression ')'
+                     | NumericLiteral
                      | StringLiteral
                      | BoolLiteral
                      | VectorLiteral
