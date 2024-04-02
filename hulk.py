@@ -59,7 +59,7 @@ hulk_grammar = AttributeGrammar(
         ('Term', ['Term', Terminal.Div, 'UnarySub'], lambda s: AstDiv(s[0], s[2])),
         ('Term', ['Term', Terminal.Rem, 'UnarySub'], lambda s: AstRem(s[0], s[2])),
         ('Term', ['UnarySub'], lambda s: s[0]),
-        ('UnarySub', [Terminal.Sub, 'Factor'], lambda s: AstUnarySub(s[0])),
+        ('UnarySub', [Terminal.Sub, 'Factor'], lambda s: AstUnarySub(s[1])),
         ('UnarySub', ['Factor'], lambda s: s[0]),
         ('Factor', ['PrimitiveExpression', Terminal.Pow, 'Factor'], lambda s: AstPow(s[0], s[2])),
         ('Factor', ['PrimitiveExpression'], lambda s: s[0]),
