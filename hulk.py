@@ -1,4 +1,4 @@
-from ast import *
+from m_ast import *
 from lexer import Terminal
 from parsing import AttributeGrammar, build_slr_parser
 

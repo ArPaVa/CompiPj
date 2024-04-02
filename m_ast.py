@@ -1,3 +1,5 @@
+# I had to change the name to m_ast because it enters in conflict with an external library
+
 class AstNode:
 
     def accept(self, visitor):
