@@ -27,10 +27,13 @@ class Runner:
         return node.expr.accept(self)
 
     def visit_AstFunction(self, node):
-        raise NotImplementedError()
+        name, args, type_annotation = node.proto.accept(self)
+        self.names[name] = None # we don't know
+        return node.block.accept(self)
+        
     
     def visit_AstProto(self, node):
-        raise NotImplementedError()
+        return node.name, node.args, node.type_annotation
     
     def visit_AstBinding(self, node):
         raise NotImplementedError()
@@ -63,9 +66,6 @@ class Runner:
     
     def visit_AstRem(self, node):
         return node.left.accept(self) % node.right.accept(self)
-    
-    def visit_AstNumericLiteral(self, node):
-        return node.value
 
     def visit_AstUnarySub(self, node): 
         return - node.expr.accept(self) 
@@ -73,9 +73,6 @@ class Runner:
     def visit_AstPow(self, node):
         return node.left.accept(self) ** node.right.accept(self)
     
-    def visit_AstBoolLiteral(self, node):
-        return node.value
-
     def visit_AstBlockExpr(self, node): #TODO revisar
         for expr in node.expr_list:
             r = expr.accept(self)
@@ -88,27 +85,90 @@ class Runner:
         raise NotImplementedError()
         
     def visit_AstBranch(self, node):
-        raise NotImplementedError()
+        if bool(node.expr.accept(self)):
+            return node.then.accept(self)
+        return node._else.accept(self)
         
-    def visit_AstAnd(self, node):
-        return node.left.accept(self) and node.right.accept(self)
+    def visit_AstAnd(self, node): # TODO not working
+        return bool(node.left.accept(self)) and bool(node.right.accept(self))
+        
+    def visit_AstOr(self, node): # TODO not working
+        return bool(node.left.accept(self)) or bool(node.right.accept(self))
+
+    def visit_AstNot(self, node): # TODO not working
+        return not bool(node.predicate.accept(self))
+        
+    def visit_AstLessThan(self, node):
+        return node.left.accept(self) < node.right.accept(self)
+        
+    def visit_AstLessEqual(self, node):
+        return node.left.accept(self) <= node.right.accept(self)
+        
+    def visit_AstGreaterThan(self, node):
+        return node.left.accept(self) > node.right.accept(self)
+        
+    def visit_AstGreaterEqual(self, node):
+        return node.left.accept(self) >= node.right.accept(self)
+        
+    def visit_AstNotEqual(self, node):
+        return node.left.accept(self) != node.right.accept(self)
+        
+    def visit_AstEqual(self, node):
+        return node.left.accept(self) == node.right.accept(self)
     
     def visit_AstWhileExpr(self, node):
         ret = None
         while node.expr.accept(self):
             ret = node.block.accept(self)
         return ret
-
+    
+    def visit_AstForExpr(self, node): #TODO
+        raise NotImplementedError()
+    
+    def visit_AstIterator(self, node): #TODO
+        raise NotImplementedError()
+    
+    def visit_AstDowncast(self, node): #TODO
+        raise NotImplementedError()
+    
+    def visit_AstTypeInstantiation(self, node): #TODO
+        raise NotImplementedError()
+    
+    def visit_AstVectorLiteral(self, node): #TODO
+        raise NotImplementedError()
+    
+    def visit_AstVectorComprehesion(self, node): #TODO
+        raise NotImplementedError()
+    
     def visit_AstCallExpr(self, node):
         func = self.names[node.name]
         return func(*[param.accept(self) for param in node.params])
 
+    def visit_AstIndexAccess(self, node): #TODO
+        raise NotImplementedError()
+    
+    def visit_AstBoolLiteral(self, node):
+        return node.value
 
+    def visit_AstIndexAccess(self, node): #TODO
+        raise NotImplementedError()
+    
+    def visit_AstTypeTest(self, node): #TODO
+        raise NotImplementedError()
+    
+    def visit_AstNumericLiteral(self, node):
+        return node.value
+
+    def visit_AstStringLiteral(self, node):
+        return node.value
+    
+    def visit_AstAccess(self, node):
+        return node.value
 
 runner = Runner(builting)
 root = hulk_parse(tokenize("""
     
-    print(true & true);
+    print(3 != 3);
 """))
 
 print(root.accept(runner))

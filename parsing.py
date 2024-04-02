@@ -193,8 +193,8 @@ def build_slr_parser(G, *, key=lambda x: x):
         i = 0
         s = [1]
         r = []
-
         while True:
+
             try:
                 k = action[s[-1]][key(buf[i])]
 
