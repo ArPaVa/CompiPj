@@ -1,35 +1,45 @@
 from hulk import hulk_parse
 from lexer import tokenize
+from scope import RunScope
 import math
 import random
 
-builting = {'print':print,
-            'range':lambda x,y: range(x,y), #TODO next y current
-            'sqrt' :lambda   x: math.sqrt(x),
-            'sin'  :lambda   x: math.sin(x),
-            'cos'  :lambda   x: math.cos(x),
-            'exp'  :lambda   x: math.exp(x),
-            'log'  :lambda x,y: math.log(y,x),
-            'rand' :lambda    : random.uniform(0,1),
-            'PI'   :math.pi,
-            'E'    :math.e  #TODO Type conforming?
+#TODO Type conforming?
+builting = {('print', 1):print,
+            ('range', 2):lambda x,y: range(x,y), #TODO next y current
+            ('sqrt', 1) :lambda   x: math.sqrt(x),
+            ('sin', 1)  :lambda   x: math.sin(x),
+            ('cos', 1)  :lambda   x: math.cos(x),
+            ('exp', 1)  :lambda   x: math.exp(x),
+            ('log', 2)  :lambda x,y: math.log(y,x),
+            ('rand', 0) :lambda    : random.uniform(0,1),
             }
+ctes = {'PI' :math.pi,
+        'E'  :math.e  
+        }
 # noinspection PyPep8Naming,PyMethodMayBeStatic
 class Runner:
 
-    def __init__(self, names):
-        self.names = names
+    def __init__(self, builting, ctes):
+        self.builting = builting
+        self.scope = RunScope(parent=None)
+        for fname, n in builting:
+            self.scope.assign_function(fname, list(range(n)), None)
+        for vname in ctes:
+            self.scope.assign_variable(vname, ctes[vname])
 
     def visit_default(self, _):
         raise NotImplementedError()
 
     def visit_AstRoot(self, node):
+        for definition in node.top_level:
+            definition.accept(self)
         return node.expr.accept(self)
 
     def visit_AstFunction(self, node):
-        name, args, type_annotation = node.proto.accept(self)
-        self.names[name] = None # we don't know
-        return node.block.accept(self)
+        name, params, type_annotation = node.proto.accept(self)
+        self.scope.assign_function(name.lexeme, [p.name.lexeme for p in params], node.block)
+        return # TODO
         
     
     def visit_AstProto(self, node):
@@ -48,10 +58,10 @@ class Runner:
         raise NotImplementedError()
     
     def visit_AstAdd(self, node):
-        return node.left.accept(self) + node.right.accept(self)
+        return float(node.left.accept(self)) + float(node.right.accept(self))
     
     def visit_AstSub(self, node):
-        return node.left.accept(self) - node.right.accept(self)
+        return float(node.left.accept(self)) - float(node.right.accept(self))
     
     def visit_AstStringConcat(self, node):
         if node.extra:
@@ -59,19 +69,19 @@ class Runner:
         return str(node.left.accept(self)) + str(node.right.accept(self))
     
     def visit_AstProd(self, node):
-        return node.left.accept(self) * node.right.accept(self)
+        return float(node.left.accept(self)) * float(node.right.accept(self))
     
     def visit_AstDiv(self, node):
-        return node.left.accept(self) / node.right.accept(self)
+        return float(node.left.accept(self)) / float(node.right.accept(self))
     
     def visit_AstRem(self, node):
-        return node.left.accept(self) % node.right.accept(self)
+        return float(node.left.accept(self)) % float(node.right.accept(self))
 
     def visit_AstUnarySub(self, node): 
-        return - node.expr.accept(self) 
+        return - float(node.expr.accept(self))
     
     def visit_AstPow(self, node):
-        return node.left.accept(self) ** node.right.accept(self)
+        return float(node.left.accept(self)) ** float(node.right.accept(self))
     
     def visit_AstBlockExpr(self, node): #TODO revisar
         for expr in node.expr_list:
@@ -99,16 +109,16 @@ class Runner:
         return not bool(node.predicate.accept(self))
         
     def visit_AstLessThan(self, node):
-        return node.left.accept(self) < node.right.accept(self)
+        return float(node.left.accept(self)) < float(node.right.accept(self))
         
     def visit_AstLessEqual(self, node):
-        return node.left.accept(self) <= node.right.accept(self)
+        return float(node.left.accept(self)) <= float(node.right.accept(self))
         
     def visit_AstGreaterThan(self, node):
-        return node.left.accept(self) > node.right.accept(self)
+        return float(node.left.accept(self)) > float(node.right.accept(self))
         
     def visit_AstGreaterEqual(self, node):
-        return node.left.accept(self) >= node.right.accept(self)
+        return float(node.left.accept(self)) >= float(node.right.accept(self))
         
     def visit_AstNotEqual(self, node):
         return node.left.accept(self) != node.right.accept(self)
@@ -141,8 +151,29 @@ class Runner:
         raise NotImplementedError()
     
     def visit_AstCallExpr(self, node):
-        func = self.names[node.name]
-        return func(*[param.accept(self) for param in node.params])
+        args = node.params
+        func = self.builting.get((node.name,len(args)), None)
+        if func:
+            return func(*[arg.accept(self) for arg in args])
+        # It's not a builtin function
+        ok, info = self.scope.get_function_info(node.name, len(args))
+        if ok:
+            params, block = info
+            function_scope = self.scope.create_child_scope()
+            for i in range(len(args)):
+                ok = function_scope.assign_variable(params[i], args[i].accept(self))
+                if not ok:
+                    break
+
+            # execute block
+            global_scope = self.scope
+            self.scope = function_scope
+            value = block.accept(self)
+            self.scope = global_scope
+
+            return value
+        
+        raise Exception(f"The function {node.name} with {len(args)} parameters is not defined")
 
     def visit_AstIndexAccess(self, node): #TODO
         raise NotImplementedError()
@@ -163,12 +194,23 @@ class Runner:
         return node.value
     
     def visit_AstAccess(self, node):
-        return node.value
+        ok, vvalue = self.scope.get_variable_info(node.name)
+        if ok:
+            return vvalue
+        raise Exception(f"The variable {node.name} is not defined")
 
-runner = Runner(builting)
+runner = Runner(builting, ctes)
 root = hulk_parse(tokenize("""
+
+    function tan(x) => sin(x) / cos(x);
+    function operate(x, y) {
+        print(x + y);
+        print(x - y);
+        print(x * y);
+        print(x / y);
+    }
     
-    print(3 != 3);
+    operate(4,2);
 """))
 
 print(root.accept(runner))

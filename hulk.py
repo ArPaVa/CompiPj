@@ -137,3 +137,4 @@ hulk_grammar = AttributeGrammar(
     ])
 
 hulk_parse = build_slr_parser(hulk_grammar, key=lambda t: t.type)
+print(Terminal.And in hulk_grammar.follows['Expression'])

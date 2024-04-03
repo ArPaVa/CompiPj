@@ -301,5 +301,5 @@ class AstStringLiteral(AstNode):
 class AstAccess(AstNode):
 
     def __init__(self, name, scope=None):
-        self.name = name
+        self.name = name.lexeme
         self.scope = scope
