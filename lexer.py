@@ -139,10 +139,10 @@ def tokenize(input):
                 i += 1
 
             # noinspection PyUnresolvedReferences
-            tokens.append(Token(line, column, Terminal.String, input[:i + 1]))
+            tokens.append(Token(line, column, Terminal.String, input[1:i]))
 
-            column += i
-            input = input[i:]
+            column += i + 1
+            input = input[i + 1:]
 
             continue
 

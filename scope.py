@@ -1,4 +1,5 @@
 from m_ast import AstNode
+from collections import OrderedDict
 
 class Scope:
     def __init__(self, parent=None):
@@ -144,3 +145,101 @@ class RunScope(Scope):
         if self.parent != None:
             return self.parent.get_function_info(fname, n)
         return False, None
+
+class Attribute:
+    def __init__(self, name, value):
+        self.name = name
+        self.value = value
+
+class Method:
+    def __init__(self, name, params, body):
+        self.name = name
+        self.params = params
+        self.body = body
+
+    def __eq__(self, other):
+        return other.name == self.name and len(other.params) == len(self.params) 
+
+class Type:
+    def __init__(self, type_name:str, type_args=None):
+        self.name = type_name
+        self.type_args = type_args
+        self.base = None
+        self.attributes = []
+        self.methods = []
+
+    def set_parent(self, parent):
+        if self.base is not None:
+            raise Exception(f'Parent type is already set for {self.name}.')
+        self.base = parent
+        self.inherits = True
+
+    def get_attribute(self, name:str):
+        for attr in self.attributes:
+            attr:Attribute
+            if attr.name == name:
+                return attr
+        raise Exception(f'Attribute "{name}" is not defined in {self.name}.')
+
+    def define_attribute(self, name:str, value):
+        if name in (attr.name for attr in self.attributes):
+            raise Exception(f'Attribute "{name}" is already defined in {self.name}.')
+        attribute = Attribute(name, value)
+        self.attributes.append(attribute)
+        return attribute
+
+    def get_method(self, name:str):
+        for method in self.methods:
+            method:Method
+            if method.name == name:
+                return method
+        if self.base is None:
+            raise Exception(f'Method "{name}" is not defined in {self.name}.')
+        
+        try:
+            return self.parent.get_method(name)
+        except:
+            raise Exception(f'Method "{name}" is not defined in {self.name}.')
+
+    def define_method(self, name:str, param_names:list, body):
+        if name in (method.name for method in self.methods):
+            raise Exception(f'Method "{name}" already defined in {self.name}')
+
+        method = Method(name, param_names, body)
+        self.methods.append(method)
+        return method
+
+    def all_attributes(self):
+        plain = OrderedDict() if self.base is None else self.base.all_attributes()
+        for attr in self.attributes:
+            plain[attr.name] = (attr, self)
+        return plain
+
+    def all_methods(self):
+        plain = OrderedDict() if self.base is None else self.base.all_methods()
+        for method in self.methods:
+            plain[method.name] = (method, self)
+        return plain
+
+    # def conforms_to(self, other):
+    #     return other.bypass() or self == other or self.parent is not None and self.parent.conforms_to(other)
+
+    # def bypass(self):
+    #     return False
+
+class Context:
+    def __init__(self):
+        self.types = {}
+
+    def create_type(self, name:str):
+        if name in self.types:
+            raise Exception(f'Type with the same name ({name}) already in context.')
+        typex = self.types[name] = Type(name)
+        return typex
+
+    def get_type(self, name:str):
+        try:
+            return self.types[name]
+        except KeyError:
+            raise Exception(f'Type "{name}" is not defined.')
+        

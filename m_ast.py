@@ -27,7 +27,7 @@ class AstFunction(AstNode):
 class AstProto(AstNode):
 
     def __init__(self, name, args, type_annotation=None):
-        self.name = name
+        self.name = name.lexeme
         self.args = args
         self.type_annotation = type_annotation
 
@@ -35,7 +35,7 @@ class AstProto(AstNode):
 class AstBinding(AstNode):
 
     def __init__(self, name, type_annotation=None):
-        self.name = name
+        self.name = name.lexeme
         self.type_annotation = type_annotation
 
 
@@ -220,6 +220,7 @@ class AstForExpr(AstNode):
     def __init__(self, iterator, expr):
         self.iterator = iterator
         self.expr = expr
+        
 
 
 class AstIterator(AstNode):

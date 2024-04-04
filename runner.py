@@ -1,8 +1,18 @@
 from hulk import hulk_parse
-from lexer import tokenize
-from scope import RunScope
+from lexer import tokenize, Token, Terminal
+from scope import RunScope, Attribute, Method, Type, Context
+from m_ast import *
 import math
 import random
+
+# def _range(min, max):
+    
+#     min = min;
+#     max = max;
+#     current = min - 1;
+
+#     next(): Boolean => (self.current := self.current + 1) < max;
+#     current(): Number => self.current;
 
 #TODO Type conforming?
 builting = {('print', 1):print,
@@ -17,12 +27,20 @@ builting = {('print', 1):print,
 ctes = {'PI' :math.pi,
         'E'  :math.e  
         }
+
+def create_builtin_functions():
+
+    pass
+def create_builtin_type():
+    pass
+
 # noinspection PyPep8Naming,PyMethodMayBeStatic
 class Runner:
 
     def __init__(self, builting, ctes):
         self.builting = builting
         self.scope = RunScope(parent=None)
+        self.context = Context()
         for fname, n in builting:
             self.scope.assign_function(fname, list(range(n)), None)
         for vname in ctes:
@@ -38,7 +56,7 @@ class Runner:
 
     def visit_AstFunction(self, node):
         name, params, type_annotation = node.proto.accept(self)
-        self.scope.assign_function(name.lexeme, [p.name.lexeme for p in params], node.block)
+        self.scope.assign_function(name, [p.name for p in params], node.block)
         return # TODO
         
     
@@ -48,14 +66,41 @@ class Runner:
     def visit_AstBinding(self, node):
         raise NotImplementedError()
     
-    def visit_AstTypeDefinition(self, node):
-        raise NotImplementedError()
-    
-    def visit_AstAssignment(self, node):
-        raise NotImplementedError()
-    
     def visit_AstProtocolDefinition(self, node):
         raise NotImplementedError()
+    
+    def visit_AstTypeDefinition(self, node):
+        node.constructor # AstProto(with type args) or Identifier
+        node.block # type attributes + type methods(is a list)
+        node.inherit # Identifier or CallExpression or None
+        if isinstance(node.constructor, AstProto):
+            type = self.context.create_type(node.constructor.name)
+            # poner los args en algo
+        else: 
+            type = self.context.create_type(node.constructor)
+
+        if node.inherit != None:
+            if isinstance(node.inherit, AstCallExpr):
+                type.set_parent(node.inherit.name)
+                # hacer algo con los arg
+            else:
+                type.set_parent(node.inherit)
+
+        for member in node.block:
+            # member is a AstAssignment or a AstFunction
+            if isinstance(member, AstAssignment):
+                type.define_attribute(member.name, member.expr)
+
+            if isinstance(member, AstFunction):
+                type.define_method(member.proto.name, [arg.name for arg in member.proto.args], member.block)
+
+        return # TODO
+    
+    def visit_AstAssignment(self, node): # let
+        vname = node.name.name
+        vvalue = node.expr.accept(self)
+        self.scope.assign_variable(vname, vvalue)
+        return vvalue    
     
     def visit_AstAdd(self, node):
         return float(node.left.accept(self)) + float(node.right.accept(self))
@@ -85,14 +130,24 @@ class Runner:
     
     def visit_AstBlockExpr(self, node): #TODO revisar
         for expr in node.expr_list:
-            r = expr.accept(self)
-        return r
+            ret = expr.accept(self)
+        return ret
         
     def visit_AstLetExpr(self, node):
-        raise NotImplementedError()
+        scopes = [self.scope]
+        for assig in node.assignment_list:
+            scopes.append(scopes[-1].create_child_scope())
+            self.scope = scopes[-1]
+            assig.accept(self)
+        value = node.expr.accept(self)
+        self.scope = scopes[0]
+        return value
         
     def visit_AstDestructiveAssignment(self, node):
-        raise NotImplementedError()
+        vname = node.name
+        vvalue = node.expr.accept(self)
+        self.scope.assign_variable_destructive(vname, vvalue)
+        return vvalue
         
     def visit_AstBranch(self, node):
         if bool(node.expr.accept(self)):
@@ -133,7 +188,27 @@ class Runner:
         return ret
     
     def visit_AstForExpr(self, node): #TODO
-        raise NotImplementedError()
+        # let iterable = range(0, 10) in
+        # while (iterable.next())
+        #     let x = iterable.current() in
+        #         print(x);
+        iter = Token(0,0,Terminal.Identifier,"0iterable")
+        next = Token(0,0,Terminal.Identifier,"next")
+        current = Token(0,0,Terminal.Identifier,"current")
+
+        for_scope = self.scope.create_child_scope()
+        for_scope.assign_variable("0iterable", node.iterator.expr) #.accept(self)
+        # vvalue = for_scope.get_variable_info("0iterable")
+        iternext = AstAccess(AstCallExpr(next,[]), iter)
+        itercurrent = AstAccess(AstCallExpr(current,[]), iter)
+        self.scope = for_scope
+        while iternext.accept(self):
+            let_scope = for_scope.create_child_scope()
+            let_scope.assign_variable(node.iterator.name, itercurrent) 
+            self.scope = let_scope
+            ret = node.expr.accept(self)
+        self.scope = for_scope.parent
+        return ret
     
     def visit_AstIterator(self, node): #TODO
         raise NotImplementedError()
@@ -202,6 +277,17 @@ class Runner:
 runner = Runner(builting, ctes)
 root = hulk_parse(tokenize("""
 
+    type Point {
+        x = 0;
+        y = 0;
+
+        getX() => self.x;
+        getY() => self.y;
+
+        setX(x) => self.x := x;
+        setY(y) => self.y := y;
+    }
+
     function tan(x) => sin(x) / cos(x);
     function operate(x, y) {
         print(x + y);
@@ -210,7 +296,7 @@ root = hulk_parse(tokenize("""
         print(x / y);
     }
     
-    operate(4,2);
+    let a = tan(PI/2) in print(a)
 """))
 
-print(root.accept(runner))
+root.accept(runner)
