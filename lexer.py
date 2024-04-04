@@ -1,5 +1,4 @@
-from enum import Enum
-
+import enum
 import regex
 
 
@@ -20,11 +19,11 @@ names = [
     'Semicolon', 'BraceL', 'BraceR', 'ParenL', 'ParenR', 'BracketL', 'BracketR', 'Comma', 'Equal',
     'Plus', 'Sub', 'Prod', 'Div', 'Rem', 'Pow', 'Dot', 'Colon', 'At', 'And', 'Or', 'Not',
     'GreaterThan', 'LessThan', 'New', 'As', 'Function', 'Let', 'In', 'If', 'Elif', 'Else', 'true',
-    'false', 'Is', 'While', 'For', 'Type', 'Inherit', 'Protocol', 'Extends', 'Number', 'Identifier',
-    'String'
+    'false', 'Is', 'While', 'For', 'Type', 'Inherit', 'Protocol', 'Extends', 'Comprehension', 'Number',
+    'Identifier', 'String'
 ]
 
-Terminal = Enum('TType', names)
+Terminal = enum.Enum('Terminal', names)
 
 # noinspection PyUnresolvedReferences
 str2tk = {
@@ -48,6 +47,7 @@ str2tk = {
     '@': Terminal.At,
     '&': Terminal.And,
     '|': Terminal.Or,
+    '||': Terminal.Comprehension,
     '!': Terminal.Not,
     '>': Terminal.GreaterThan,
     '<': Terminal.LessThan,

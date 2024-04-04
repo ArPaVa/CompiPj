@@ -1,4 +1,4 @@
-HulkProgram -> TopLevelDefinitions Expression
+HulkProgram -> TopLevelDefinitions Expression ';'?
 
 TopLevelDefinitions -> TopLevelDefinitions FunctionDefinition
                      | TopLevelDefinitions TypeDefinition
@@ -47,13 +47,29 @@ ProtocolBlock -> '{' MethodDeclarations '}'
 MethodDeclarations -> MethodDeclarations FunctionHead ';'
                     | <epsilon>
 
-Expression -> Expression '+' Term
-            | Expression '-' Term
-            | Expression '@''@'? Term
-            | StructuredExpression
-            | BoolExpression
-            | Expression ';'
-            | Term
+Expression -> StructuredExpression
+            | BasicExpression
+
+BasicExpression -> BasicExpression '&' BoolExpression
+                 | BasicExpression '|' BoolExpression
+                 | BoolExpression
+
+BoolExpression -> '!' BoolExpression
+                | Predicate
+
+Predicate -> ArithExpression '<' ArithExpression
+           | ArithExpression '<=' ArithExpression
+           | ArithExpression '>' ArithExpression
+           | ArithExpression '>=' ArithExpression
+           | ArithExpression '==' ArithExpression
+           | ArithExpression '!=' ArithExpression
+           | TypeTestExpression
+           | ArithExpression
+
+ArithExpression -> ArithExpression '+' Term
+                 | ArithExpression '-' Term
+                 | ArithExpression '@''@'? Term
+                 | Term
 
 Term -> Term '*' UnarySub
       | Term '/' UnarySub
@@ -72,7 +88,6 @@ StructuredExpression -> BlockExpression
                       | ConditionalExpression
                       | WhileExpression
                       | ForExpression
-                      | TypeTestExpression
                       | DowncastExpression
                       | TypeInstantiation
 
@@ -90,21 +105,6 @@ DestructiveAssignment -> Identifier ':=' Expression
 
 ConditionalExpression -> 'if' '(' Expression ')' Expression ChainedConditional
 
-BoolExpression -> BoolExpression '&' Nor
-                | BoolExpression '|' Nor
-                | Nor
-
-Nor -> '!' Predicate
-     | Predicate
-
-Predicate -> Expression '<' Expression
-           | Expression '<=' Expression
-           | Expression '>' Expression
-           | Expression '>=' Expression
-           | Expression '==' Expression
-           | Expression '!=' Expression
-           | TypeTestExpression
-
 ChainedConditional -> 'elif' '(' Expression ')' Expression ChainedConditional
                     | 'else' Expression
 
@@ -114,9 +114,9 @@ ForExpression -> 'for' '(' Iterator ')' Expression
 
 Iterator -> TypedIdentifier 'in' Expression
 
-TypeTestExpression -> Expression 'is' Identifier
+TypeTestExpression -> ArithExpression 'is' Identifier
 
-DowncastExpression -> Expression 'as' Identifier
+DowncastExpression -> ArithExpression 'as' Identifier
 
 TypeInstantiation -> 'new' Identifier '(' Params ')'
 
