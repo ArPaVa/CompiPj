@@ -210,7 +210,16 @@ root = hulk_parse(tokenize("""
         print(x / y);
     }
     
-    operate(4,2);
+    {
+        operate(2, 4);
+        print(1 ^ 123);
+        ! true;
+        false | true | false;
+        while (1) print(1);
+        new T();
+        1 + 2 as String;
+        false is Bool;
+    };
 """))
 
 print(root.accept(runner))
