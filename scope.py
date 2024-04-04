@@ -227,6 +227,17 @@ class Type:
     # def bypass(self):
     #     return False
 
+class Instance:
+    def __init__(self, type_name:str, type_args=None):
+        self.type = type_name
+        self.type_args = type_args
+
+    def get_atrribute(self, name:str):
+        pass
+    def call_method(self, name:str, args:list):
+        pass
+
+
 class Context:
     def __init__(self):
         self.types = {}

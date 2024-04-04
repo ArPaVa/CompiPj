@@ -1,6 +1,6 @@
 from hulk import hulk_parse
 from lexer import tokenize, Token, Terminal
-from scope import RunScope, Attribute, Method, Type, Context
+from scope import RunScope, Attribute, Method, Type, Instance, Context
 from m_ast import *
 import math
 import random
@@ -59,7 +59,6 @@ class Runner:
         self.scope.assign_function(name, [p.name for p in params], node.block)
         return # TODO
         
-    
     def visit_AstProto(self, node):
         return node.name, node.args, node.type_annotation
     
@@ -77,7 +76,7 @@ class Runner:
             type = self.context.create_type(node.constructor.name)
             # poner los args en algo
         else: 
-            type = self.context.create_type(node.constructor)
+            type = self.context.create_type(node.constructor.lexeme)
 
         if node.inherit != None:
             if isinstance(node.inherit, AstCallExpr):
@@ -217,7 +216,9 @@ class Runner:
         raise NotImplementedError()
     
     def visit_AstTypeInstantiation(self, node): #TODO
-        raise NotImplementedError()
+        type: Type = self.context.get_type(node.type)
+        inst = Instance(type.name, None if len(node.params)==0 else node.params)
+        return inst
     
     def visit_AstVectorLiteral(self, node): #TODO
         raise NotImplementedError()
@@ -280,12 +281,6 @@ root = hulk_parse(tokenize("""
     type Point {
         x = 0;
         y = 0;
-
-        getX() => self.x;
-        getY() => self.y;
-
-        setX(x) => self.x := x;
-        setY(y) => self.y := y;
     }
 
     function tan(x) => sin(x) / cos(x);
@@ -296,7 +291,7 @@ root = hulk_parse(tokenize("""
         print(x / y);
     }
     
-    let a = tan(PI/2) in print(a)
+    let pt = new Point() in let a = tan(0) in print(a);
 """))
 
 root.accept(runner)

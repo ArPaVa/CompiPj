@@ -242,7 +242,7 @@ class AstTypeInstantiation(AstNode):
 
     # noinspection PyShadowingBuiltins
     def __init__(self, type, params):
-        self.type = type
+        self.type = type.lexeme
         self.params = params
 
 
