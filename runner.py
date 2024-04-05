@@ -73,8 +73,7 @@ class Runner:
         node.block # type attributes + type methods(is a list)
         node.inherit # Identifier or CallExpression or None
         if isinstance(node.constructor, AstProto):
-            type = self.context.create_type(node.constructor.name)
-            # poner los args en algo
+            type = self.context.create_type(node.constructor.name, [arg.name for arg in node.constructor.args])
         else: 
             type = self.context.create_type(node.constructor.lexeme)
 
@@ -88,10 +87,14 @@ class Runner:
         for member in node.block:
             # member is a AstAssignment or a AstFunction
             if isinstance(member, AstAssignment):
-                type.define_attribute(member.name, member.expr)
+                if not isinstance(node.constructor, AstProto):
+                    type.define_attribute(member.name.name, member.expr.accept(self))
+                else:
+                    type.define_attribute(member.name.name, member.expr)
 
             if isinstance(member, AstFunction):
                 type.define_method(member.proto.name, [arg.name for arg in member.proto.args], member.block)
+
 
         return # TODO
     
@@ -143,10 +146,25 @@ class Runner:
         return value
         
     def visit_AstDestructiveAssignment(self, node):
-        vname = node.name
+        # node.name is an Access. Meaning a AstAccess or AstIndexAccess
         vvalue = node.expr.accept(self)
-        self.scope.assign_variable_destructive(vname, vvalue)
-        return vvalue
+        access = node.name
+        if access.calling == None:
+            # Then access.source is an Identifier
+            vname = access.source.lexeme
+            self.scope.assign_variable_destructive(vname, vvalue)
+            return vvalue
+        access_source = access.source
+        if isinstance(access.calling, AstCallExpr):
+            raise Exception(f"The destructive assignment cannot be applied to a function or method")
+        if isinstance(access.calling, Token):
+            # only possible if access_source is self
+            ok, instance, inst_scope = self.scope.get_variable_info('self')
+            if ok:
+                inst_scope.assign_variable_destructive(access.calling.lexeme, vvalue)
+                return vvalue
+        raise Exception(f"The destructive assignment cannot be applied in this circumstance")
+
         
     def visit_AstBranch(self, node):
         if bool(node.expr.accept(self)):
@@ -197,7 +215,6 @@ class Runner:
 
         for_scope = self.scope.create_child_scope()
         for_scope.assign_variable("0iterable", node.iterator.expr) #.accept(self)
-        # vvalue = for_scope.get_variable_info("0iterable")
         iternext = AstAccess(AstCallExpr(next,[]), iter)
         itercurrent = AstAccess(AstCallExpr(current,[]), iter)
         self.scope = for_scope
@@ -217,7 +234,7 @@ class Runner:
     
     def visit_AstTypeInstantiation(self, node): #TODO
         type: Type = self.context.get_type(node.type)
-        inst = Instance(type.name, None if len(node.params)==0 else node.params)
+        inst = Instance(type, self.scope.get_global_scope(), self, None if len(node.params)==0 else node.params)
         return inst
     
     def visit_AstVectorLiteral(self, node): #TODO
@@ -256,9 +273,6 @@ class Runner:
     
     def visit_AstBoolLiteral(self, node):
         return node.value
-
-    def visit_AstIndexAccess(self, node): #TODO
-        raise NotImplementedError()
     
     def visit_AstTypeTest(self, node): #TODO
         raise NotImplementedError()
@@ -270,17 +284,36 @@ class Runner:
         return node.value
     
     def visit_AstAccess(self, node):
-        ok, vvalue = self.scope.get_variable_info(node.name)
-        if ok:
-            return vvalue
-        raise Exception(f"The variable {node.name} is not defined")
+        if node.calling == None:
+            # Then node.source is an Identifier, the it is a type instance
+            ok, instance, var_scope = self.scope.get_variable_info(node.source.lexeme)
+            if ok:
+                return instance
+            raise Exception(f"The variable {node.source.lexeme} is not defined")
+
+        # node.source is an AstAccess and node.calling is a AstCallExpr or an Identifier
+        instance:Instance = node.source.accept(self)
+
+        if isinstance(node.calling, AstCallExpr):
+            return instance.call_method(node.calling.name, node.calling.params, self)
+        if isinstance(node.calling, Token):
+            return instance.get_atrribute((node.calling.lexeme))
+        # TODO what are the other cases?
 
 runner = Runner(builting, ctes)
 root = hulk_parse(tokenize("""
 
-    type Point {
-        x = 0;
-        y = 0;
+    type Point(x, y) {
+    x = x;
+    y = y;
+
+    getX() => self.x;
+    getY() => y;
+
+    setX(x) {self.x := x;}
+
+    setY(y) {self.y := y;}
+
     }
 
     function tan(x) => sin(x) / cos(x);
@@ -290,8 +323,9 @@ root = hulk_parse(tokenize("""
         print(x * y);
         print(x / y);
     }
+    function show(x, y) => "(" @ x @ ", " @ y @ ")" ;
     
-    let pt = new Point() in let a = tan(0) in print(a);
+    let pt = new Point(6,4), xx = pt.setX(tan(0)) in let a = pt.getY() in print(show(pt.getX(), a));
 """))
-
+# si una variable se llama newx da errorde parsing
 root.accept(runner)

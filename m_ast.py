@@ -1,5 +1,3 @@
-# I had to change the name to m_ast because it enters in conflict with an external library
-
 class AstNode:
 
     def accept(self, visitor):
@@ -268,8 +266,8 @@ class AstCallExpr(AstNode):
 
 class AstIndexAccess(AstNode):
 
-    def __init__(self, name, expr):
-        self.name = name
+    def __init__(self, source, expr):
+        self.source = source
         self.expr = expr
 
 
@@ -301,6 +299,6 @@ class AstStringLiteral(AstNode):
 
 class AstAccess(AstNode):
 
-    def __init__(self, name, scope=None):
-        self.name = name.lexeme
-        self.scope = scope
+    def __init__(self, source, calling=None):
+        self.source = source
+        self.calling = calling

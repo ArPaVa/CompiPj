@@ -14,6 +14,11 @@ class Scope:
         child_scope = Scope(self)
         self.children.append(child_scope)
         return child_scope
+
+    def get_global_scope(self):
+        if self.parent != None:
+            return self.parent.get_global_scope()
+        return self
     
     ### Semantic Check
     def define_variable(self, vname):
@@ -110,9 +115,9 @@ class RunScope(Scope):
     
     def assign_variable_destructive(self, vname, vvalue):
         """Add a new value for vname in the local scope if it has been defined before in any parent scope."""
-        exists, value = self.get_variable_info(vname)
+        exists, value, var_scope = self.get_variable_info(vname)
         if exists:
-            self.local_vars[vname] = vvalue
+            var_scope.local_vars[vname] = vvalue
             return True
         return False
         raise Exception(f"var {vname} is not defined previously, so it cannot have a destructive assignment.")
@@ -131,11 +136,11 @@ class RunScope(Scope):
     def get_variable_info(self, vname):
         """ If vname exists in current scope or any parent scope return it's value in the first ocurrency bottom-up"""
         if vname in self.local_vars.keys():
-            return True, self.local_vars[vname]
+            return True, self.local_vars[vname], self
         
         if self.parent != None:
             return self.parent.get_variable_info(vname)
-        return False, None
+        return False, None, None
     
     def get_function_info(self, fname, n):
         """ If fname exists return it's [params, expr] """
@@ -210,7 +215,7 @@ class Type:
         return method
 
     def all_attributes(self):
-        plain = OrderedDict() if self.base is None else self.base.all_attributes()
+        plain = OrderedDict()
         for attr in self.attributes:
             plain[attr.name] = (attr, self)
         return plain
@@ -228,24 +233,61 @@ class Type:
     #     return False
 
 class Instance:
-    def __init__(self, type_name:str, type_args=None):
-        self.type = type_name
-        self.type_args = type_args
+    def __init__(self, type:Type, global_scope, visitor, type_args=None):
+        self.type = type
+        self.scope = RunScope(global_scope)
+        # self.scope.assign_variable('self', None)
+        if type_args != None:
+            self.type_args:list = type_args
+            for i in range(len(type.type_args)):
+                vname = type.type_args[i]
+                vvalue = self.type_args[i].accept(visitor)
+                self.scope.assign_variable(vname, vvalue)
+        else: 
+            self.type_args = None
+            attributes = type.all_attributes()
+            for name in attributes:
+                attr: Attribute = attributes[name][0]
+                self.scope.assign_variable(attr.name, attr.value)
+        self.scope.assign_variable('self', self)
+
+        methods = type.all_methods()
+        for name in methods:
+            method: Method = methods[name][0]
+            self.scope.assign_function(method.name, method.params, method.body)              
 
     def get_atrribute(self, name:str):
-        pass
-    def call_method(self, name:str, args:list):
-        pass
-
+        if name in self.scope.local_vars.keys():
+            return self.scope.local_vars[name]
+        raise Exception(f"RuntimeError: Undefined attribute '{name}' for type {self.type}.")
+    
+    def call_method(self, name:str, args:list, visitor):
+        if (name, len(args)) in self.scope.local_funcs.keys():
+            params, block = self.scope.local_funcs[(name, len(args))]
+            method_scope = self.scope.create_child_scope()
+            # method_scope.local_vars = self.scope.local_vars
+            # method_scope.local_funcs = self.scope.local_funcs
+            for i in range(len(args)):
+                ok = method_scope.assign_variable(params[i], args[i].accept(visitor))
+                if not ok:
+                    break
+            # execute block
+            global_scope = visitor.scope
+            visitor.scope = method_scope
+            value = block.accept(visitor)
+            visitor.scope = global_scope
+            return value
+        raise Exception(f"RuntimeError: Undefined method '{name}' with {len(args)} args for type {self.type}.")
+    
 
 class Context:
     def __init__(self):
         self.types = {}
 
-    def create_type(self, name:str):
+    def create_type(self, name:str, type_args=None):
         if name in self.types:
             raise Exception(f'Type with the same name ({name}) already in context.')
-        typex = self.types[name] = Type(name)
+        typex = self.types[name] = Type(name, type_args)
         return typex
 
     def get_type(self, name:str):
