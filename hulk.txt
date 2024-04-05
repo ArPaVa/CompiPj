@@ -33,7 +33,7 @@ BaseType -> Identifier
 TypeBlock -> '{' MemberDefinitions '}'
 
 MemberDefinitions -> MemberDefinitions Assignment ';'
-                   | MemberDefinitions FunctionHead FunctionBlock ';'
+                   | MemberDefinitions FunctionHead FunctionBlock 
                    | <epsilon>
 
 Assignment -> TypedIdentifier '=' Expression
@@ -101,7 +101,7 @@ LetExpression -> 'let' AssignmentList 'in' Expression
 AssignmentList -> AssignmentList ',' Assignment
                 | Assignment
 
-DestructiveAssignment -> Identifier ':=' Expression
+DestructiveAssignment -> Access ':=' Expression
 
 ConditionalExpression -> 'if' '(' Expression ')' Expression ChainedConditional
 

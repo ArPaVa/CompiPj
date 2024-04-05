@@ -300,32 +300,12 @@ class Runner:
             return instance.get_atrribute((node.calling.lexeme))
         # TODO what are the other cases?
 
-runner = Runner(builting, ctes)
-root = hulk_parse(tokenize("""
+# runner = Runner(builting, ctes)
 
-    type Point(x, y) {
-    x = x;
-    y = y;
+# root = hulk_parse(tokenize("""
 
-    getX() => self.x;
-    getY() => y;
+#     print(sin(2 * PI) ^ 2 + cos(3 * PI / log(4, 64)));
+# """))
 
-    setX(x) {self.x := x;}
-
-    setY(y) {self.y := y;}
-
-    }
-
-    function tan(x) => sin(x) / cos(x);
-    function operate(x, y) {
-        print(x + y);
-        print(x - y);
-        print(x * y);
-        print(x / y);
-    }
-    function show(x, y) => "(" @ x @ ", " @ y @ ")" ;
-    
-    let pt = new Point(6,4), xx = pt.setX(tan(0)) in let a = pt.getY() in print(show(pt.getX(), a));
-"""))
-# si una variable se llama newx da errorde parsing
-root.accept(runner)
+# print(a)
+# root.accept(runner)
