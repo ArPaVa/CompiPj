@@ -26,7 +26,7 @@ names = [
 Terminal = enum.Enum('Terminal', names)
 
 # noinspection PyUnresolvedReferences
-str2tk = {
+sym2tk = {
     ';': Terminal.Semicolon,
     '{': Terminal.BraceL,
     '}': Terminal.BraceR,
@@ -51,6 +51,10 @@ str2tk = {
     '!': Terminal.Not,
     '>': Terminal.GreaterThan,
     '<': Terminal.LessThan,
+}
+
+# noinspection PyUnresolvedReferences
+kw2tk = {
     'new': Terminal.New,
     'as': Terminal.As,
     'function': Terminal.Function,
@@ -70,9 +74,9 @@ str2tk = {
     'extends': Terminal.Extends,
 }
 
-escaped = [''.join(['\\' + char if char in regex.special else char for char in k]) for k in str2tk.keys()]
+escaped = [''.join(['\\' + char if char in regex.special else char for char in k]) for k in sym2tk.keys()]
 
-keywords = regex.regex('|'.join(escaped))
+symbols = regex.regex('|'.join(escaped))
 number = regex.regex('[0-9]+|[0-9]*.[0-9]+')
 identifier = regex.regex('[_a-zA-Z][_a-zA-Z0-9]*')
 
@@ -97,10 +101,10 @@ def tokenize(input):
 
             input = input[1:]
 
-        match, i, lexeme = keywords.match(input)
+        match, i, lexeme = symbols.match(input)
 
         if match:
-            tokens.append(Token(line, column, str2tk[lexeme], lexeme))
+            tokens.append(Token(line, column, sym2tk[lexeme], lexeme))
 
             column += i
             input = input[i:]
@@ -121,8 +125,13 @@ def tokenize(input):
         match, i, lexeme = identifier.match(input)
 
         if match:
-            # noinspection PyUnresolvedReferences
-            tokens.append(Token(line, column, Terminal.Identifier, lexeme))
+
+            if lexeme in kw2tk.keys():
+                tokens.append(Token(line, column, kw2tk[lexeme], lexeme))
+
+            else:
+                # noinspection PyUnresolvedReferences
+                tokens.append(Token(line, column, Terminal.Identifier, lexeme))
 
             column += i
             input = input[i:]

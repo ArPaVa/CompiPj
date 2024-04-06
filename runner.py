@@ -335,12 +335,13 @@ class Runner:
             raise Exception(f"Type attribute {node.calling.lexeme} is not accesible outside of the type")
 
 
-# runner = Runner(builting, ctes)
+runner = Runner(builting, ctes)
 
-# root = hulk_parse(tokenize("""
+root = hulk_parse(tokenize("""
+    {
+        print(sin(2 * PI) ^ 2 + cos(3 * PI / log(4, 64)));
+        let newx = 1 in newx * 2;
+    }
+"""))
 
-#     print(sin(2 * PI) ^ 2 + cos(3 * PI / log(4, 64)));
-# """))
-
-# print(a)
-# root.accept(runner)
+print(root.accept(runner))
