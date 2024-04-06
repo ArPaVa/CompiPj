@@ -241,21 +241,19 @@ class Runner:
         # let iterable = range(0, 10) in
         # while (iterable.next())
         #     let x = iterable.current() in
-        #         print(x);
-        iter = Token(0,0,Terminal.Identifier,"0iterable")
-        next = Token(0,0,Terminal.Identifier,"next")
-        current = Token(0,0,Terminal.Identifier,"current")
+        #         // code that uses `x`
 
         for_scope = self.scope.create_child_scope()
-        for_scope.assign_variable("0iterable", node.iterator.expr) #.accept(self)
-        iternext = AstAccess(AstCallExpr(next,[]), iter)
-        itercurrent = AstAccess(AstCallExpr(current,[]), iter)
+        for_scope.assign_variable("0iterable", node.iterator.expr.accept(self))
+        cond = AstAccess(source=AstAccess(Token(-1,-1,Terminal.Identifier,'0iterable')),
+                             calling=AstCallExpr(Token(-1,-1,Terminal.Identifier,"next"),[]))
+        block = AstLetExpr(assignment_list=[AstAssignment(name=AstBinding(name=Token(-1,-1,Terminal.Identifier,'x')),
+                                                        expr=AstAccess(source=AstAccess(Token(-1,-1,Terminal.Identifier,'0iterable')),
+                                                                       calling=AstCallExpr(Token(-1,-1,Terminal.Identifier,"current"),[])) )],
+                            expr=node.expr)
         self.scope = for_scope
-        while iternext.accept(self):
-            let_scope = for_scope.create_child_scope()
-            let_scope.assign_variable(node.iterator.name, itercurrent) 
-            self.scope = let_scope
-            ret = node.expr.accept(self)
+        while cond.accept(self):
+            ret = block.accept(self)
         self.scope = for_scope.parent
         return ret
     

@@ -38,14 +38,19 @@ programs = ["""
     """ 
 
     let iterable = range(0, 10) in
-        while (iterable.next())
-            let x = iterable.current() in {
-                print(x);
-            }
+    while (iterable.next())
+        let x = iterable.current() in {
+            print(x);
+        }
+    """,
+    """
+    for (x in range(0,10)) {
+        print(x);
+    };
     """
     ]
 try:
-    root = hulk_parse(tokenize(programs[1]))
+    root = hulk_parse(tokenize(programs[2]))
 except Exception as er:
     print(f"Parsing error: {er}")
 
