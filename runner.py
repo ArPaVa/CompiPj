@@ -16,7 +16,7 @@ import random
 
 #TODO Type conforming?
 builting = {('print', 1):print,
-            ('range', 2):lambda x,y: range(x,y), #TODO next y current
+            # ('range', 2):lambda x,y: range(x,y), #TODO next y current
             ('sqrt', 1) :lambda   x: math.sqrt(x),
             ('sin', 1)  :lambda   x: math.sin(x),
             ('cos', 1)  :lambda   x: math.cos(x),
@@ -29,10 +29,34 @@ ctes = {'PI' :math.pi,
         }
 
 def create_builtin_functions():
+    range_function = AstFunction(proto=AstProto(name=Token(-1,-1,Terminal.Identifier,'range'),
+                                                args=[AstBinding(name=Token(-1,-1,Terminal.Identifier,'min')), 
+                                                      AstBinding(name=Token(-1,-1,Terminal.Identifier,'max'))]), 
+                                block=AstTypeInstantiation(type=Token(-1,-1,Terminal.Identifier,'Range'),
+                                                            params=[AstAccess(source=Token(-1,-1,Terminal.Identifier, 'min')),
+                                                                    AstAccess(source=Token(-1,-1,Terminal.Identifier, 'max')),]))
+    return [range_function]
 
-    pass
 def create_builtin_type():
-    pass
+    range_type = AstTypeDefinition(constructor=AstProto(name=Token(-1,-1,Terminal.Identifier,'Range'),
+                                                        args=[AstBinding(name=Token(-1,-1,Terminal.Identifier,'min'),type_annotation=Token(-1,-1,Terminal.Identifier, 'Number')),
+                                                                AstBinding(name=Token(-1,-1,Terminal.Identifier,'max'),type_annotation=Token(-1,-1,Terminal.Identifier, 'Number'))]),
+                                    block=[AstAssignment(name=AstBinding(name=Token(-1,-1,Terminal.Identifier,'min')), expr=AstAccess(source=Token(-1,-1,Terminal.Identifier,'min'))),
+                                        AstAssignment(name=AstBinding(name=Token(-1,-1,Terminal.Identifier,'max')), expr=AstAccess(source=Token(-1,-1,Terminal.Identifier,'max'))),
+                                        AstAssignment(name=AstBinding(name=Token(-1,-1,Terminal.Identifier,'current')), expr=AstSub(left=AstAccess(source=Token(-1,-1,Terminal.Identifier,'min')),
+                                                                                                    right=AstNumericLiteral(Token(-1,-1,Terminal.Number, 1)))),
+                                        AstFunction(proto=AstProto(name=Token(-1,-1,Terminal.Identifier,'next'),args=[],type_annotation=Token(-1,-1,Terminal.Identifier, 'Boolean')), 
+                                                    block=AstLessThan(left=AstDestructiveAssignment(name=AstAccess(source=AstAccess(source=Token(-1,-1,Terminal.Identifier,'self')),
+                                                                                                                    calling=Token(-1,-1,Terminal.Identifier,'current')),
+                                                                                                    expr=AstAdd(left=AstAccess(source=AstAccess(source=Token(-1,-1,Terminal.Identifier,'self')),
+                                                                                                                               calling=Token(-1,-1,Terminal.Identifier,'current')),
+                                                                                                                right=AstNumericLiteral(Token(-1,-1,Terminal.Number, 1)))),
+                                                                        right=AstAccess(source=Token(-1,-1,Terminal.Identifier,'max')))),
+                                        AstFunction(proto=AstProto(name=Token(-1,-1,Terminal.Identifier,'current'),args=[],type_annotation=Token(-1,-1,Terminal.Identifier, 'Number')), 
+                                                    block=AstAccess(source=AstAccess(source=Token(-1,-1,Terminal.Identifier,'self')),
+                                                                    calling=Token(-1,-1,Terminal.Identifier,'current'))),
+                                        ])
+    return [range_type]
 
 # noinspection PyPep8Naming,PyMethodMayBeStatic
 class Runner:
@@ -45,6 +69,10 @@ class Runner:
             self.scope.assign_function(fname, list(range(n)), None)
         for vname in ctes:
             self.scope.assign_variable(vname, ctes[vname])
+        for t in create_builtin_type():
+            self.visit_AstTypeDefinition(t)
+        for f in create_builtin_functions():
+            self.visit_AstFunction(f)
 
     def visit_default(self, _):
         raise NotImplementedError()
@@ -78,11 +106,16 @@ class Runner:
             type = self.context.create_type(node.constructor.lexeme)
 
         if node.inherit != None:
+            parent_name = None
+            parent_type_args = None
             if isinstance(node.inherit, AstCallExpr):
-                type.set_parent(node.inherit.name)
-                # hacer algo con los arg
+                # Then the parent type have type_args
+                parent_name = node.inherit.name
+                parent_type_args = node.inherit.params
             else:
-                type.set_parent(node.inherit)
+                parent_name = node.inherit.lexeme
+
+            type.set_parent(self.context.get_type(parent_name), parent_type_args)
 
         for member in node.block:
             # member is a AstAssignment or a AstFunction
@@ -297,8 +330,12 @@ class Runner:
         if isinstance(node.calling, AstCallExpr):
             return instance.call_method(node.calling.name, node.calling.params, self)
         if isinstance(node.calling, Token):
-            return instance.get_atrribute((node.calling.lexeme))
-        # TODO what are the other cases?
+            # only possible if access_source is self
+            ok, inst, inst_scope = self.scope.get_variable_info('self')
+            if ok:
+                return instance.get_atrribute((node.calling.lexeme))
+            raise Exception(f"Type attribute {node.calling.lexeme} is not accesible outside of the type")
+
 
 # runner = Runner(builting, ctes)
 

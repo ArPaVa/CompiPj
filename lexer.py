@@ -65,7 +65,7 @@ str2tk = {
     'while': Terminal.While,
     'for': Terminal.For,
     'type': Terminal.Type,
-    'inherit': Terminal.Inherit,
+    'inherits': Terminal.Inherit,
     'protocol': Terminal.Protocol,
     'extends': Terminal.Extends,
 }

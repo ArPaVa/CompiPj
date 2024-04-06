@@ -136,8 +136,6 @@ hulk_grammar = AttributeGrammar(
          lambda s: AstVectorComprehension(s[1], s[3])),
         ('CallExpression', [Terminal.Identifier, Terminal.ParenL, 'Params', Terminal.ParenR],
          lambda s: AstCallExpr(s[0], s[2])),
-        #  ('Access', [Terminal.Identifier, Terminal.Dot, Terminal.Identifier], lambda s: AstAccess(s[0])),
-        #  ('Access', [Terminal.Identifier, Terminal.Dot, 'CallExpression'], lambda s: AstAccess(s[0])),
         ('Access', ['Access', Terminal.Dot, Terminal.Identifier], lambda s: AstAccess(s[0], s[2])),
         ('Access', ['Access', Terminal.Dot, 'CallExpression'], lambda s: AstAccess(s[0], s[2])),
         ('Access', ['Access', Terminal.BracketL, 'Expression', Terminal.BracketR],

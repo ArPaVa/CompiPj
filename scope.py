@@ -156,28 +156,50 @@ class Attribute:
         self.name = name
         self.value = value
 
+    def __str__(self) -> str:
+        return self.name
+    def __repr__(self) -> str:
+        return self.__str__()
+    
 class Method:
     def __init__(self, name, params, body):
         self.name = name
         self.params = params
         self.body = body
 
+    def __str__(self) -> str:
+        return self.name
+    def __repr__(self) -> str:
+        return self.__str__()
     def __eq__(self, other):
-        return other.name == self.name and len(other.params) == len(self.params) 
+        return other != None and other.name == self.name and len(other.params) == len(self.params) 
 
 class Type:
     def __init__(self, type_name:str, type_args=None):
         self.name = type_name
         self.type_args = type_args
         self.base = None
+        self.base_args_change = None # non evaluated expression
         self.attributes = []
         self.methods = []
 
-    def set_parent(self, parent):
+    def __str__(self) -> str:
+        return self.name
+    def __repr__(self) -> str:
+        return self.__str__()
+
+    def set_parent(self, parent, base_type_args=None):
         if self.base is not None:
             raise Exception(f'Parent type is already set for {self.name}.')
         self.base = parent
         self.inherits = True
+        self.base_args_change = base_type_args
+        if self.type_args == None and self.base.type_args != None:
+            self.type_args = self.base.type_args
+        for attr in self.base.attributes:
+            self.define_attribute(attr.name, attr.value)
+        for method in self.base.methods:
+            self.define_method(method.name, method.params, method.body)
 
     def get_attribute(self, name:str):
         for attr in self.attributes:
@@ -208,14 +230,20 @@ class Type:
 
     def define_method(self, name:str, param_names:list, body):
         if name in (method.name for method in self.methods):
-            raise Exception(f'Method "{name}" already defined in {self.name}')
+            if self.base and not name in (method.name for method in self.base.methods):
+                raise Exception(f'Method "{name}" already defined in {self.name}')
+            else:
+                method = self.get_method(name)
+                method.params = param_names
+                method.body = body
+                return method
 
         method = Method(name, param_names, body)
         self.methods.append(method)
         return method
 
     def all_attributes(self):
-        plain = OrderedDict()
+        plain = OrderedDict() if self.base is None else self.base.all_attributes()
         for attr in self.attributes:
             plain[attr.name] = (attr, self)
         return plain
@@ -234,32 +262,59 @@ class Type:
 
 class Instance:
     def __init__(self, type:Type, global_scope, visitor, type_args=None):
-        self.type = type
+        self.type:Type = type
         self.scope = RunScope(global_scope)
         # self.scope.assign_variable('self', None)
         if type_args != None:
             self.type_args:list = type_args
+            constr_scope = self.scope.create_child_scope()
             for i in range(len(type.type_args)):
                 vname = type.type_args[i]
                 vvalue = self.type_args[i].accept(visitor)
-                self.scope.assign_variable(vname, vvalue)
+                constr_scope.assign_variable(vname, vvalue)
+                # constructor var assigned
+            if self.type.base != None and  self.type.base_args_change != None:
+                type_parent_args = self.type.base.type_args
+                for i, name in enumerate(type_parent_args):
+                    visitor_scope = visitor.scope
+                    visitor.scope = constr_scope 
+                    constr_scope.assign_variable(name, self.type.base_args_change[i].accept(visitor))
+                    visitor.scope = visitor_scope
+
         else: 
             self.type_args = None
-            attributes = type.all_attributes()
-            for name in attributes:
+
+        attributes = type.all_attributes()
+        for name in attributes:
+            if attributes[name][1].name == self.type.name:
                 attr: Attribute = attributes[name][0]
-                self.scope.assign_variable(attr.name, attr.value)
+                if isinstance(attr.value, AstNode):
+                    visitor_scope = visitor.scope
+                    visitor.scope = constr_scope 
+                    value = attr.value.accept(visitor)
+                    # value = constr_scope.get_variable_info(attr_val)
+                    visitor.scope = visitor_scope
+                    self.scope.assign_variable(attr.name, value)
+                else:
+                    self.scope.assign_variable(attr.name, attr.value)
+
         self.scope.assign_variable('self', self)
 
         methods = type.all_methods()
         for name in methods:
-            method: Method = methods[name][0]
-            self.scope.assign_function(method.name, method.params, method.body)              
-
+            if methods[name][1].name == self.type.name:
+                method: Method = methods[name][0]
+                self.scope.assign_function(method.name, method.params, method.body)              
+    
+    def __str__(self) -> str:
+        return f"instance of {self.type.name}"
+    def __repr__(self) -> str:
+        return self.__str__()
+    
     def get_atrribute(self, name:str):
         if name in self.scope.local_vars.keys():
             return self.scope.local_vars[name]
-        raise Exception(f"RuntimeError: Undefined attribute '{name}' for type {self.type}.")
+        raise Exception(f"Undefined attribute '{name}' for type {self.type}.")
     
     def call_method(self, name:str, args:list, visitor):
         if (name, len(args)) in self.scope.local_funcs.keys():
@@ -271,13 +326,22 @@ class Instance:
                 ok = method_scope.assign_variable(params[i], args[i].accept(visitor))
                 if not ok:
                     break
+            if self.type.base != None:
+                method = None
+                try: 
+                    method:Method = self.type.base.get_method(name)
+                except:
+                    pass
+                if method != None:
+                    method_scope.assign_function('base', method.params, method.body)
+                
             # execute block
             global_scope = visitor.scope
             visitor.scope = method_scope
             value = block.accept(visitor)
             visitor.scope = global_scope
             return value
-        raise Exception(f"RuntimeError: Undefined method '{name}' with {len(args)} args for type {self.type}.")
+        raise Exception(f"Undefined method '{name}' with {len(args)} args for type {self.type}.")
     
 
 class Context:
