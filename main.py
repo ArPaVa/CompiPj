@@ -7,7 +7,8 @@ import math
 import random
 
 runer = runner.Runner(runner.builting, runner.ctes)
-programs = ["""
+programs = [
+    """
                                
     type Point(x,y) {
         x = x;
@@ -44,23 +45,48 @@ programs = ["""
         }
     """,
     """
+    protocol Hashable {
+        hash(): Number;
+    }
+    protocol Equatable extends Hashable {
+        equals(other: Object): Boolean;
+    }
+
     for (x in range(0,10)) {
         print(x);
     };
+    """,
+    """
+    let numbers = [1,2,3,4,7,8,9] in
+        for (x in numbers)
+            print(x);
+    """,
+    """
+    let numbers = [1,2,3,4,5,6,7,8,9] in print(numbers[4]);
+    """,
+    """
+    let squares = [x^2 || x in range(1,10)] in print(squares);
     """
     ]
 try:
-    root = hulk_parse(tokenize(programs[2]))
+    root = hulk_parse(tokenize(programs[5]))
 except Exception as er:
     print(f"Parsing error: {er}")
 
-
-#for (x in range(0, 10)) print(x); Runtime error: The function next with 0 parameters is not defined
-    
+# type Vector(vector) {
+#     vector = vector;
+#     index = -1;
+#     next() : Boolean { 
+#         self.index := self.index + 1;
+#         built_in_next(self.vector, self.index);
+#         }
+#     current() : Object => self.vector[index];
+# }
+  
 # a:=42; como unico codigo no da error y debería
 
 # si una variable se llama newx da error de parsing
-# try:
-root.accept(runer)
-# except Exception as er:
-#     print(f"Runtime error: {er}")
+try:
+    root.accept(runer)
+except Exception as er:
+    print(f"Runtime error: {er}")

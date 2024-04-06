@@ -162,10 +162,11 @@ class Attribute:
         return self.__str__()
     
 class Method:
-    def __init__(self, name, params, body):
+    def __init__(self, name, params, body, type:str=None):
         self.name = name
         self.params = params
         self.body = body
+        self.type = type
 
     def __str__(self) -> str:
         return self.name
@@ -254,6 +255,15 @@ class Type:
             plain[method.name] = (method, self)
         return plain
 
+    def implents_protocol(self, protocol) -> bool:
+        for method in protocol.all_methods():
+            method:Method
+            try:
+                self.get_method(method.name) # TODO maybe check by number of params too
+            except:
+                return False
+        return True
+
     # def conforms_to(self, other):
     #     return other.bypass() or self == other or self.parent is not None and self.parent.conforms_to(other)
 
@@ -270,7 +280,9 @@ class Instance:
             constr_scope = self.scope.create_child_scope()
             for i in range(len(type.type_args)):
                 vname = type.type_args[i]
-                vvalue = self.type_args[i].accept(visitor)
+                if isinstance(self.type_args[i], AstNode):
+                    vvalue = self.type_args[i].accept(visitor)
+                else: vvalue = self.type_args[i]
                 constr_scope.assign_variable(vname, vvalue)
                 # constructor var assigned
             if self.type.base != None and  self.type.base_args_change != None:
@@ -342,11 +354,50 @@ class Instance:
             visitor.scope = global_scope
             return value
         raise Exception(f"Undefined method '{name}' with {len(args)} args for type {self.type}.")
+
+class Protocol:
+    def __init__(self, name:str, methods:list, extends=None, ext_methods=None):
+        self.name = name
+        self.methods = []
+
+        self.extend = extends
+        if self.extend != None:
+            for method in ext_methods:
+                self.define_method(method.name, method.params, method.type)
+
+        for m_name, m_params, m_type in methods:
+            self.define_method(m_name, m_params, m_type)
+        
+    def __str__(self) -> str:
+        return self.name
+    def __repr__(self) -> str:
+        return self.__str__()
     
+    def define_method(self, name:str, param_names:list, type:str) -> Method:
+        if name in (method.name for method in self.methods):
+            raise Exception(f'Method "{name}" already defined in {self.name}')
+        
+        method = Method(name, param_names, None, type)
+        self.methods.append(method)
+        return method
+
+    def have_method(self, name:str) -> bool: # TODO maybe check by number of params too
+        for method in self.methods:
+            method:Method
+            if method.name == name:
+                return True
+        return False
+        
+    def all_methods(self) -> list:
+        ret = []
+        for method in self.methods:
+            ret.append(method)
+        return ret
 
 class Context:
     def __init__(self):
         self.types = {}
+        self.protocols = {}
 
     def create_type(self, name:str, type_args=None):
         if name in self.types:
@@ -359,4 +410,19 @@ class Context:
             return self.types[name]
         except KeyError:
             raise Exception(f'Type "{name}" is not defined.')
+        
+    def create_protocol(self, name:str, methods:list, extends=None):
+        if name in self.protocols:
+            raise Exception(f'Protocol with the same name ({name}) already in context.')
+        ext_methods = []
+        if extends != None:
+            ext_methods = self.protocols[extends].all_methods()
+        protocol = self.protocols[name] = Protocol(name, methods, extends, ext_methods)
+        return protocol
+
+    def get_protocol(self, name:str):
+        try:
+            return self.protocols[name]
+        except KeyError:
+            raise Exception(f'Protocol "{name}" is not defined.')
         

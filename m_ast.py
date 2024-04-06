@@ -55,7 +55,7 @@ class AstAssignment(AstNode):
 class AstProtocolDefinition(AstNode):
 
     def __init__(self, name, block, extends=None):
-        self.name = name
+        self.name = name.lexeme
         self.block = block
         self.extends = extends
 
