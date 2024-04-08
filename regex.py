@@ -39,12 +39,8 @@ regex_parse = build_slr_parser(regex_grammar)
 class regex:
 
     def __init__(self, pattern):
-        self.pattern = pattern
         self.nfa = regex_parse(list(pattern) + [0])
         self.recognize = build_recognizer(self.nfa)
-
-    def __str__(self):
-        return f'r\'{self.pattern}\''
 
     # noinspection PyShadowingBuiltins
     def match(self, input):

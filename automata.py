@@ -4,7 +4,7 @@ import copy
 class NFA:
 
     def __init__(self, initial=0, final=1, states=2, transitions=None, **kwargs):
-
+        # PyCharm did this
         if transitions is None:
             transitions = {}
 

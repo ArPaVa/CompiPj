@@ -17,7 +17,7 @@ class Token:
 
 names = [
     'Semicolon', 'BraceL', 'BraceR', 'ParenL', 'ParenR', 'BracketL', 'BracketR', 'Comma', 'Equal',
-    'Plus', 'Sub', 'Prod', 'Div', 'Rem', 'Pow', 'Dot', 'Colon', 'At', 'And', 'Or', 'Not',
+    'Plus', 'Sub', 'Star', 'Div', 'Rem', 'Pow', 'Dot', 'Colon', 'At', 'And', 'Or', 'Not',
     'GreaterThan', 'LessThan', 'New', 'As', 'Function', 'Let', 'In', 'If', 'Elif', 'Else', 'true',
     'false', 'Is', 'While', 'For', 'Type', 'Inherit', 'Protocol', 'Extends', 'Comprehension', 'Number',
     'Identifier', 'String'
@@ -38,7 +38,7 @@ sym2tk = {
     '=': Terminal.Equal,
     '+': Terminal.Plus,
     '-': Terminal.Sub,
-    '*': Terminal.Prod,
+    '*': Terminal.Star,
     '/': Terminal.Div,
     '%': Terminal.Rem,
     '^': Terminal.Pow,
@@ -155,8 +155,15 @@ def tokenize(input):
 
             continue
 
+        if input[0] == '#':
+            while input[0] != '\n':
+                column += 1
+                input = input[1:]
+
+            continue
+
         # TODO: pretty print error
-        raise SyntaxError(f'invalid syntax at {line}:{column}')
+        raise SyntaxError(f'Invalid syntax at {line}:{column}')
 
     tokens.append(Token(line, column, 0, '$'))
     return tokens

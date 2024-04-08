@@ -200,7 +200,7 @@ def build_slr_parser(G, *, key=lambda x: x):
 
             except KeyError as err:
                 correct = list(action[s[-1]].keys())
-                raise SyntaxError(f"unexpected token {buf[i]}, expecting {correct}?") from err
+                raise SyntaxError(f"Unexpected token {buf[i]}, expecting {correct}?") from err
 
             if not k:
                 return r[0]

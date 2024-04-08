@@ -1,28 +1,28 @@
-HulkProgram -> TopLevelDefinitions Expression ';'?
+File -> TopLevel Expression? ';'?
 
-TopLevelDefinitions -> TopLevelDefinitions FunctionDefinition
-                     | TopLevelDefinitions TypeDefinition
-                     | TopLevelDefinitions ProtocolDefinition
-                     | <epsilon>
+TopLevel -> TopLevel Function
+          | TopLevel Type
+          | TopLevel Protocol
+          | <epsilon>
 
-FunctionDefinition -> 'function' FunctionHead FunctionBlock
+Function -> 'function' Prototype FunctionBlock
 
-FunctionHead -> Identifier '(' Arguments ')' TypeAnnotation?
+Prototype -> Identifier '(' Params ')' TypeAnnotation?
 
 FunctionBlock -> BlockExpression
                | '=>' Expression ';'
 
-Arguments -> Arguments ',' TypedIdentifier
-           | TypedIdentifier
-           | <epsilon>
+Params -> Params ',' Binding
+        | Binding
+        | <epsilon>
 
-TypedIdentifier -> Identifier TypeAnnotation?
+Binding -> Identifier TypeAnnotation?
 
 TypeAnnotation -> ':' Identifier
 
-TypeDefinition -> 'type' Constructor Inheritance? TypeBlock
+Type -> 'type' Constructor Inheritance? TypeBlock
 
-Constructor -> Identifier '(' Arguments ')'
+Constructor -> Identifier '(' Params ')'
              | Identifier
 
 Inheritance -> 'inherits' BaseType
@@ -30,22 +30,22 @@ Inheritance -> 'inherits' BaseType
 BaseType -> Identifier
           | CallExpression
 
-TypeBlock -> '{' MemberDefinitions '}'
+TypeBlock -> '{' Members '}'
 
-MemberDefinitions -> MemberDefinitions Assignment ';'
-                   | MemberDefinitions FunctionHead FunctionBlock 
-                   | <epsilon>
+Members -> Members Assignment ';'
+         | Members Prototype FunctionBlock
+         | <epsilon>
 
-Assignment -> TypedIdentifier '=' Expression
+Assignment -> Binding '=' Expression
 
-ProtocolDefinition -> 'protocol' Identifier Extends? ProtocolBlock
+Protocol -> 'protocol' Identifier Extends? ProtocolBlock
 
 Extends -> 'extends' Identifier
 
-ProtocolBlock -> '{' MethodDeclarations '}'
+ProtocolBlock -> '{' Methods '}'
 
-MethodDeclarations -> MethodDeclarations FunctionHead ';'
-                    | <epsilon>
+Methods -> Methods Prototype ';'
+         | <epsilon>
 
 Expression -> StructuredExpression
             | BasicExpression
@@ -112,17 +112,17 @@ WhileExpression -> 'while' '(' Expression ')' Expression
 
 ForExpression -> 'for' '(' Iterator ')' Expression
 
-Iterator -> TypedIdentifier 'in' Expression
+Iterator -> Binding 'in' Expression
 
 TypeTestExpression -> ArithExpression 'is' Identifier
 
 DowncastExpression -> ArithExpression 'as' Identifier
 
-TypeInstantiation -> 'new' Identifier '(' Params ')'
+TypeInstantiation -> 'new' Identifier '(' Arguments ')'
 
-Params -> Params ',' Expression
-        | Expression
-        | <epsilon>
+Arguments -> Arguments ',' Expression
+           | Expression
+           | <epsilon>
 
 PrimitiveExpression -> '(' Expression ')'
                      | NumericLiteral
@@ -141,10 +141,10 @@ Identifier -> [_a-zA-Z][_a-zA-Z0-9]*
 BoolLiteral -> 'true'
              | 'false'
 
-VectorLiteral -> '[' Params ']'
+VectorLiteral -> '[' Arguments ']'
                | '[' Expression '||' Iterator ']'
 
-CallExpression -> Identifier '(' Params ')'
+CallExpression -> Access '(' Arguments ')'
 
 Access -> Access '.' Identifier
         | Access '[' Expression ']'
