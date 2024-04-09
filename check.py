@@ -275,7 +275,6 @@ class Check:
         binding, iterator = node.iterator.accept(self)
         name, type_annotation = binding.accept(self)
 
-        # TODO: iterator.next() and type_annotation
         resolved_type = self.scope[type_annotation.lexeme] if type_annotation else object
 
         self.scope = Scope(parent=self.scope)
@@ -290,7 +289,6 @@ class Check:
         binding, iterator = node.iterator.accept(self)
         name, type_annotation = binding.accept(self)
 
-        # TODO: iterator.next() and type_annotation
         resolved_type = self.scope[type_annotation.lexeme] if type_annotation else object
 
         self.scope = Scope(parent=self.scope)
@@ -309,7 +307,6 @@ class Check:
         if cond is not bool:
             raise TypeError(f'if condition must be boolean, got {cond.__name__}')
 
-        # TODO: type system hole
         if then is not else_:
             return object
 
@@ -393,7 +390,6 @@ class Check:
         self.scope.bind(type_name, type)
 
     def visit_AstProtocol(self, node: AstProtocol):
-        # TODO: type system hole
         self.scope.bind(node.name, object)
 
     @staticmethod
@@ -402,12 +398,10 @@ class Check:
 
     def visit_AstFunction(self, node: AstFunction):
         name, params, type_annotation = node.prototype.accept(self)
-        # TODO: type system hole
         self.scope.bind(name, self.scope[type_annotation.lexeme] if type_annotation else object)
 
     def visit_AstCallExpression(self, node: AstCallExpression):
         func = node.binding.accept(self)
-        # TODO: type system hole
         return func
 
 
