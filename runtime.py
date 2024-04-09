@@ -2,7 +2,7 @@ import math
 import random
 from importlib import import_module
 
-from ast import *
+from astd import *
 from lexer import Token, Terminal
 from scope import Scope
 

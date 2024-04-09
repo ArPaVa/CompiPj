@@ -139,10 +139,10 @@ def hello_world():
     """
     pass
 
-
 # point_and_friends()
 # vector_and_for()
 # lords_and_regular_people()
 # ranger()
 # types_and_sht()
-hello_world()
+#hello_world()
+
