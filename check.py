@@ -86,7 +86,7 @@ class Check:
         left = node.left.accept(self)
         right = node.right.accept(self)
 
-        if left is not str or left is not float or right is not str or right is not float:
+        if (left is not str and left is not float) or (right is not str and right is not float):
             raise TypeError(f'illegal operation (@) between {left.__name__} and {right.__name__}')
 
         return str
