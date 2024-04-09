@@ -219,49 +219,49 @@ class Runtime:
         return self.scope['Vector']([elem.accept(self) for elem in node.list])
 
     def visit_AstAdd(self, node: AstAdd):
-        return node.left.accept(self) + node.right.accept(self)
+        return float(node.left.accept(self)) + float(node.right.accept(self))
 
     def visit_AstSub(self, node: AstSub):
-        return node.left.accept(self) - node.right.accept(self)
+        return float(node.left.accept(self)) - float(node.right.accept(self))
 
     def visit_AstStringConcat(self, node: AstStringConcat):
         return str(node.left.accept(self)) + (' ' if node.extra else '') + str(node.right.accept(self))
 
     def visit_AstMul(self, node: AstMul):
-        return node.left.accept(self) * node.right.accept(self)
+        return float(node.left.accept(self)) * float(node.right.accept(self))
 
     def visit_AstDiv(self, node: AstDiv):
-        return node.left.accept(self) / node.right.accept(self)
+        return float(node.left.accept(self)) / float(node.right.accept(self))
 
     def visit_AstRem(self, node: AstRem):
-        return node.left.accept(self) % node.right.accept(self)
+        return float(node.left.accept(self)) % float(node.right.accept(self))
 
     def visit_AstPow(self, node: AstPow):
-        return node.left.accept(self) ** node.right.accept(self)
+        return float(node.left.accept(self)) ** float(node.right.accept(self))
 
     def visit_AstAnd(self, node: AstAnd):
-        return node.left.accept(self) and node.right.accept(self)
+        return bool(node.left.accept(self)) and bool(node.right.accept(self))
 
     def visit_AstOr(self, node: AstOr):
-        return node.left.accept(self) or node.right.accept(self)
+        return bool(node.left.accept(self)) or bool(node.right.accept(self))
 
     def visit_AstUnarySub(self, node: AstUnarySub):
-        return - node.operand.accept(self)
+        return - float(node.operand.accept(self))
 
     def visit_AstNot(self, node: AstNot):
-        return not node.operand.accept(self)
+        return not bool(node.operand.accept(self))
 
     def visit_AstLessThan(self, node: AstLessThan):
-        return node.left.accept(self) < node.right.accept(self)
+        return float(node.left.accept(self)) < float(node.right.accept(self))
 
     def visit_AstLessEqual(self, node: AstLessEqual):
-        return node.left.accept(self) <= node.right.accept(self)
+        return float(node.left.accept(self)) <= float(node.right.accept(self))
 
     def visit_AstGreaterThan(self, node: AstGreaterThan):
-        return node.left.accept(self) > node.right.accept(self)
+        return float(node.left.accept(self)) > float(node.right.accept(self))
 
     def visit_AstGreaterEqual(self, node: AstGreaterEqual):
-        return node.left.accept(self) >= node.right.accept(self)
+        return float(node.left.accept(self)) >= float(node.right.accept(self))
 
     def visit_AstNotEqual(self, node: AstNotEqual):
         return node.left.accept(self) != node.right.accept(self)
