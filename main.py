@@ -3,13 +3,19 @@ from functools import wraps
 from hulk import hulk_parse
 from lexer import tokenize
 from runtime import default_runtime
+from check import default_check
 
 
 def hulk_compile(f):
     @wraps(f)
-    def wrapper(*args, **kwargs):
+    def wrapper(check=False):
+        return_type = None
         ast = hulk_parse(tokenize(f.__doc__))
-        return ast.accept(default_runtime)
+
+        if check:  #
+            return_type = ast.accept(default_check)
+
+        return ast.accept(default_runtime), return_type
 
     return wrapper
 
@@ -96,7 +102,7 @@ def ranger():
             max = max;
 
             next() {
-                self.min := self. min + 1;
+                self.min := self.min + 1;
                 self.min < self.max
             }
 
