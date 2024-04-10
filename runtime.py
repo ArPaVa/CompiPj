@@ -1,6 +1,5 @@
 import math
 import random
-from importlib import import_module
 
 from ast import *
 from lexer import Token, Terminal
@@ -16,20 +15,22 @@ global_scope = Scope({
     'log': math.log,
     'rand': random.random,
     'print': print,
-    'import': import_module,
     'Number': float,
     'String': str,
-    'Object': object
+    'Object': object,
+    'Bool': bool,
+    'Unit': type(None),
+    'Vector': list
 })
 
 
 class Func:
 
     # noinspection PyShadowingNames
-    def __init__(self, runtime, name, type_annotation, params, block):
+    def __init__(self, runtime, name, resolved_type, params, block):
         self.name = name
-        self.type_annotation = type_annotation
         self.runtime = runtime
+        self.resolved_type = resolved_type
         self.closure = runtime.scope
         self.params = params
         self.block = block
@@ -43,9 +44,8 @@ class Func:
         for i in range(len(args)):
             self.runtime.scope[names[i]] = args[i]
 
-        if '#super' in self.closure.local:
-            if self.name in self.closure['#super'].attrs.local:
-                self.runtime.scope.bind('base', self.closure['#super'].attrs[self.name])
+        if '#super' in self.closure.local and self.name in self.closure['#super'].attrs.local:
+            self.runtime.scope.bind('base', self.closure['#super'].attrs[self.name])
 
         result = self.block.accept(self.runtime)
         self.runtime.scope = local
@@ -56,24 +56,24 @@ class Func:
 class Type:
 
     # noinspection PyShadowingNames
-    def __init__(self, runtime, constructor, block, inherits):
+    def __init__(self, runtime, constructor, block, inherit):
         self.block = block
         self.runtime = runtime
         self.constructor = constructor
-
         self.supertype = None
         self.super_args = []
 
-        self.type_name = constructor.name if isinstance(constructor, AstPrototype) \
-            else constructor.lexeme
+        if isinstance(constructor, AstPrototype):
+            self.name = constructor.name
+        else:
+            self.name = constructor.lexeme
 
-        if inherits:
-            if not isinstance(inherits, AstCallExpression):
-                self.supertype = self.runtime.scope[inherits.lexeme]
-
+        if inherit:
+            if isinstance(inherit, AstCallExpression):
+                self.supertype = inherit.binding.accept(self.runtime)
+                self.super_args = inherit.args
             else:
-                self.supertype = inherits.binding.accept(self.runtime)
-                self.super_args = inherits.args
+                self.supertype = self.runtime.scope[inherit.lexeme]
 
     def __call__(self, *args, **kwargs):
         local = self.runtime.scope
@@ -105,47 +105,48 @@ class Type:
         return self.__subclasscheck__(instance.type)
 
     def __subclasscheck__(self, subclass):
-        return subclass is self or self.__subclasscheck__(subclass.supertype)
+        return subclass is self or self.__subclasscheck__(subclass.supertype) \
+            if subclass.supertype else False
 
 
 class Protocol:
 
-    def __init__(self, runtime, methods, supertype):
+    def __init__(self, runtime, methods, extends):
         self.runtime = runtime
         self.methods = methods
-        self.supertype = supertype
+        self.extends = extends
 
     def __instancecheck__(self, instance):
+        if isinstance(instance, list):
+            return True
+
         for name, return_type, param_types in self.methods:
             if name not in instance.attrs.local:
                 return False
 
-            method = instance.attrs[name]
-            if not isinstance(method, Func):
+            subclass_method = instance.attrs[name]
+            if not isinstance(subclass_method, Func):
                 return False
 
-            resolved_type = self.runtime.scope[return_type.lexeme] if return_type else object
-            method_resolved_type = self.runtime.scope[method.type_annotation.lexeme] if method.type_annotation \
-                else object
+            resolved_return_type = self.runtime.scope[return_type.lexeme] \
+                if return_type else object
 
-            if not issubclass(method_resolved_type, resolved_type):
+            if not issubclass(subclass_method.resolved_type.return_type, resolved_return_type):
                 return False
 
-            if len(param_types) != len(method.params):
+            if len(subclass_method.resolved_type.param_types) != len(param_types):
                 return False
 
-            method_param_types = [param.type_annotation for param in method.params]
             for i in range(len(param_types)):
-                resolved_param_type = self.runtime.scope[param_types[i].lexeme] if param_types[i] else object
-                method_resolved_param_type = self.runtime.scope[method_param_types[i].lexeme] if method_param_types[i] \
-                    else object
+                resolved_param_type = self.runtime.scope[param_types[i].lexeme] \
+                    if param_types[i] else object
 
-                if not issubclass(resolved_param_type, method_resolved_param_type):
+                if not issubclass(resolved_param_type, subclass_method.resolved_type.param_types[i]):
                     return False
 
-        if self.supertype:
-            supertype = self.runtime.scope[self.supertype.lexeme]
-            return supertype.__instancecheck__(instance)
+        if self.extends:
+            extends = self.runtime.scope[self.extends.lexeme]
+            return extends.__instancecheck__(instance)
 
         return True
 
@@ -157,15 +158,6 @@ class HulkObject:
         self.attrs = attrs
         self.type = type
 
-    def __getitem__(self, item):
-        return self.attrs['__getitem__'](item)
-
-    def __setitem__(self, key, value):
-        return self.attrs['__setitem__'](key, value)
-
-    def __call__(self, *args, **kwargs):
-        return self.attrs['__call__'](*args, **kwargs)
-
 
 # noinspection PyPep8Naming
 class Runtime:
@@ -174,31 +166,32 @@ class Runtime:
         self.scope = scope
 
     def visit_AstFile(self, node: AstFile):
-        for top_level in node.top_level:
-            top_level.accept(self)
+        for _node in node.list:
+            _node.accept(self)
 
         if node.main:
             return node.main.accept(self)
 
     def visit_AstFunction(self, node: AstFunction):
-        name, params = node.prototype.accept(self)
-        self.scope.bind(name, Func(self, name, node.prototype.type_annotation, params, node.block))
+        name, params, _ = node.prototype.accept(self)
+        # noinspection PyUnresolvedReferences,PyProtectedMember
+        self.scope.bind(name, Func(self, name, node._resolved_type, params, node.block))
 
     @staticmethod
     def visit_AstPrototype(node: AstPrototype):
-        return node.name, node.params
+        return node.name, node.params, node.type_annotation
 
     def visit_AstType(self, node: AstType):
         # noinspection PyShadowingBuiltins
         type = Type(self, node.constructor, node.block, node.inherit)
-        self.scope.bind(type.type_name, type)
+        self.scope.bind(type.name, type)
 
     def visit_AstProtocol(self, node: AstProtocol):
         methods = []
 
         for prototype in node.block:
-            name, params = prototype.accept(self)
-            methods.append((name, prototype.type_annotation, [param.type_annotation for param in params]))
+            name, params, type_annotation = prototype.accept(self)
+            methods.append((name, type_annotation, [param.type_annotation for param in params]))
 
         protocol = Protocol(self, methods, node.extends)
         self.scope.bind(node.name, protocol)
@@ -213,10 +206,10 @@ class Runtime:
 
     @staticmethod
     def visit_AstStringLiteral(node: AstStringLiteral):
-        return node.string
+        return node.value
 
     def visit_AstVectorLiteral(self, node: AstVectorLiteral):
-        return self.scope['Vector']([elem.accept(self) for elem in node.list])
+        return self.scope['Vector']([element.accept(self) for element in node.list])
 
     def visit_AstAdd(self, node: AstAdd):
         return node.left.accept(self) + node.right.accept(self)
@@ -278,7 +271,8 @@ class Runtime:
     def visit_AstBranch(self, node: AstBranch):
         if node.expr.accept(self):
             return node.then.accept(self)
-        return node.else_.accept(self)
+        # noinspection PyProtectedMember
+        return node._else.accept(self)
 
     def visit_AstBlockExpression(self, node: AstBlockExpression):
         result = None
@@ -298,13 +292,26 @@ class Runtime:
 
         return result
 
+    @staticmethod
+    def visit_AstBinding(node: AstBinding):
+        return node.name  # , node.type_annotation
+
     def visit_AstIterator(self, node: AstIterator):
         return node.binding.accept(self), node.expr.accept(self)
 
     def visit_AstForExpression(self, node: AstForExpression):
         name, iterator = node.iterator.accept(self)
-        binding = f'#iter{id(node)}'
 
+        result = None
+        self.scope = Scope(parent=self.scope)
+
+        if isinstance(iterator, list):
+            for element in iterator:
+                self.scope[name] = element
+                result = node.expr.accept(self)
+            return result
+
+        binding = f'#iter{id(node)}'
         cond = AstCallExpression(AstAccess(Token(-1, -1, Terminal.Identifier, 'next'),
                                            AstAccess(Token(-1, -1, Terminal.Identifier, binding))), [])
 
@@ -314,8 +321,6 @@ class Runtime:
                                                       AstAccess(Token(-1, -1, Terminal.Identifier, binding))), []))],
             node.expr)
 
-        result = None
-        self.scope = Scope(parent=self.scope)
         self.scope.bind(binding, iterator)
 
         while cond.accept(self):
@@ -326,10 +331,17 @@ class Runtime:
 
     def visit_AstVectorComprehension(self, node: AstVectorComprehension):
         vector = []
-
         name, iterator = node.iterator.accept(self)
-        binding = f'#iter{id(node)}'
 
+        self.scope = Scope(parent=self.scope)
+
+        if isinstance(iterator, list):
+            for element in iterator:
+                self.scope[name] = element
+                vector.append(node.expr.accept(self))
+            return self.scope['Vector'](vector)
+
+        binding = f'#iter{id(node)}'
         cond = AstCallExpression(AstAccess(Token(-1, -1, Terminal.Identifier, 'next'),
                                            AstAccess(Token(-1, -1, Terminal.Identifier, binding))), [])
 
@@ -339,7 +351,6 @@ class Runtime:
                                                       AstAccess(Token(-1, -1, Terminal.Identifier, binding))), []))],
             node.expr)
 
-        self.scope = Scope(parent=self.scope)
         self.scope.bind(binding, iterator)
 
         while cond.accept(self):
@@ -353,20 +364,17 @@ class Runtime:
         value = node.expr.accept(self)
         self.scope.bind(key, value)
 
-    @staticmethod
-    def visit_AstBinding(node: AstBinding):
-        return node.name
-
     def visit_AstAccess(self, node: AstAccess):
         if not node.prev:
             return self.scope[node.name]
 
         prev = node.prev.accept(self)
+        return prev.attrs[node.name]
 
-        if isinstance(prev, HulkObject):
-            return prev.attrs[node.name]
-
-        return getattr(prev, node.name)
+        # if isinstance(prev, HulkObject):
+        #     return prev.attrs[node.name]
+        #
+        # return getattr(prev, node.name)
 
     def visit_AstIndexAccess(self, node: AstIndexAccess):
         index = int(node.expr.accept(self))
@@ -396,12 +404,13 @@ class Runtime:
 
         else:
             prev = binding.prev.accept(self)
+            prev.attrs[binding.name] = value
 
-            if isinstance(prev, HulkObject):
-                prev.attrs[binding.name] = value
-
-            else:
-                setattr(prev, binding.name, value)
+            # if isinstance(prev, HulkObject):
+            #     prev.attrs[binding.name] = value
+            #
+            # else:
+            #     setattr(prev, binding.name, value)
 
         return value
 

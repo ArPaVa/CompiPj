@@ -1,13 +1,17 @@
 class AstNode:
 
     def accept(self, visitor):
-        return getattr(visitor, 'visit_' + type(self).__name__)(self)
+        lookup = 'visit_' + type(self).__name__
+        if hasattr(visitor, lookup):
+            return getattr(visitor, lookup)(self)
+        return visitor.visit_default(self)
 
 
 class AstFile(AstNode):
 
-    def __init__(self, top_level, main=None):
-        self.top_level = top_level
+    # noinspection PyShadowingBuiltins
+    def __init__(self, list, main=None):
+        self.list = list
         self.main = main
 
 
@@ -143,7 +147,7 @@ class AstAccess(AstNode):
 class AstStringLiteral(AstNode):
 
     def __init__(self, literal):
-        self.string = literal.lexeme
+        self.value = literal.lexeme
 
 
 class AstNumericLiteral(AstNode):
@@ -196,10 +200,10 @@ class AstDestructiveAssignment(AstNode):
 
 class AstBranch(AstNode):
 
-    def __init__(self, expr, then, else_):
+    def __init__(self, expr, then, _else):
         self.expr = expr
         self.then = then
-        self.else_ = else_
+        self._else = _else
 
 
 class AstWhileExpression(AstNode):
