@@ -197,14 +197,23 @@ default_semantic_checker = SemanticChecker()
 
 class Type:
 
-    def __init__(self, attrs, param_types, supertype):
+    def __init__(self, name, attrs, param_types, supertype):
+        self.__name__ = name
         self.attrs = attrs
         self.param_types = param_types
         self.supertype = supertype
 
     def __subclasscheck__(self, subclass):
-        return subclass is self or self.__subclasscheck__(subclass.supertype) \
-            if subclass.supertype else False
+        if subclass is self:
+            return True
+
+        if subclass is object:
+            return True
+
+        if subclass.supertype:
+            return self.__subclasscheck__(subclass.supertype)
+
+        return False
 
 
 class Func:
@@ -217,6 +226,7 @@ class Func:
 class VecType:
 
     def __init__(self, element_type):
+        self.element_type = element_type
         self.attrs = {
             'next': Func(bool, []),
             'current': Func(element_type, [])
@@ -230,8 +240,8 @@ class Protocol:
         self.extends = extends
 
     def __subclasscheck__(self, subclass):
-        for name in self.attrs.keys():
-            if name not in subclass.attrs:
+        for name in self.attrs.local.keys():
+            if name not in subclass.attrs.local:
                 return False
 
             method = self.attrs[name]
@@ -259,12 +269,12 @@ class Protocol:
 global_context = Scope({
     'E': float,
     'PI': float,
-    # 'sqrt': float,
-    # 'sin': float,
-    # 'cos': float,
-    # 'exp': float,
-    # 'log': float,
-    # 'rand': float,
+    'sqrt': Func(float, [float]),
+    'sin': Func(float, [float]),
+    'cos': Func(float, [float]),
+    'exp': Func(float, [float]),
+    'log': Func(float, [float, float]),
+    'rand': Func(float, []),
     'print': Func(type(None), [object]),
     'Number': float,
     'String': str,
@@ -480,7 +490,7 @@ class TypeChecker:
             raise TypeError(f'type mismatch, expecting Number, got {index_type.__name__}')
 
         vector_type = node.binding.accept(self)
-        return vector_type
+        return vector_type.element_type
 
     def visit_AstType(self, node: AstType):
         local = self.context
@@ -511,13 +521,14 @@ class TypeChecker:
         param_types = [self.context[param_type.lexeme] if param_type else object for param_type in param_types]
 
         # noinspection PyShadowingBuiltins
-        type = Type(self.context, param_types, resolved_type)
+        type = Type(type_name, self.context, param_types, resolved_type)
 
         self.context = Scope(parent=self.context)
         self.context.bind('self', type)
 
         for member in node.block:
             member.accept(self)
+            type.attrs = self.context
 
         type.attrs = self.context
         self.context = local
@@ -651,13 +662,32 @@ class TypeChecker:
         prev = node.prev.accept(self)
         return prev.attrs[node.name]
 
-    @staticmethod
-    def visit_AstPrototype(node: AstPrototype):
+    def visit_AstPrototype(self, node: AstPrototype):
+        name, params, type_annotation = node.name, node.params, node.type_annotation
+
+        param_types = [param.type_annotation for param in params]
+        param_types = [self.context[param_type.lexeme] if param_type else object for param_type in param_types]
+
+        self.context = Scope(parent=self.context)
+        for i in range(len(params)):
+            self.context.bind(params[i].name, param_types[i])
+    
+        static_type = self.context[type_annotation.lexeme]
+
+        node._resolved_type = Func(static_type, param_types)
+        self.context.bind(name, node._resolved_type)
         return node.name, node.params, node.type_annotation
 
     def visit_AstFunction(self, node: AstFunction):
-        name, params, type_annotation = node.prototype.accept(self)
+        name, params, type_annotation = node.prototype.name, node.prototype.params, node.prototype.type_annotation
 
+        param_types = [param.type_annotation for param in params]
+        param_types = [self.context[param_type.lexeme] if param_type else object for param_type in param_types]
+
+        self.context = Scope(parent=self.context)
+        for i in range(len(params)):
+            self.context.bind(params[i].name, param_types[i])
+    
         return_type = node.block.accept(self)
         static_type = return_type
 
@@ -667,8 +697,6 @@ class TypeChecker:
             if not issubclass(return_type, static_type):
                 raise TypeError(f'expected {static_type.__name__}, got {return_type.__name__}')
 
-        param_types = [param.type_annotation for param in params]
-        param_types = [self.context[param_type.lexeme] if param_type else object for param_type in param_types]
 
         node._resolved_type = Func(static_type, param_types)
         self.context.bind(name, node._resolved_type)
@@ -693,7 +721,7 @@ class TypeChecker:
         if node.extends:
             extends = self.context[node.extends.lexeme]
 
-        protocol = Protocol(self.context.local, extends)
+        protocol = Protocol(self.context, extends)
 
         self.context = self.context.parent
         self.context.bind(node.name, protocol)
